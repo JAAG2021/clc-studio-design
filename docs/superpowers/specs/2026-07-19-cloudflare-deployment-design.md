@@ -16,14 +16,17 @@ adelante un panel para publicar noticias/proyectos sin tocar código).
 
 ## Decisión de arquitectura
 
-Todo el stack vive en **Cloudflare** (un solo vendor, un solo panel):
+El sitio y sus funciones viven en **Cloudflare**; el dominio y el correo
+profesional se compran en **Hostinger** (dominio `clcolor.com` + buzón real
+Hostinger Business Email), con el DNS delegado a Cloudflare para conservar
+Pages, Web Analytics y la verificación de Resend:
 
 ```
 Usuario → Cloudflare Pages (sitio estático)
               ├─ Cloudflare Function /api/contact → Resend (envío de email)
               └─ [Fase 2] Cloudflare Function /api/cms + D1 (BD) + R2 (assets)
-Cloudflare Registrar/DNS → dominio nuevo
-Cloudflare Email Routing → contacto@<dominio> reenviado a Gmail existente
+Hostinger → registro del dominio clcolor.com (DNS delegado a Cloudflare)
+Hostinger Business Email → buzón real contacto@clcolor.com (envío y recepción)
 ```
 
 ### Alternativas consideradas y descartadas
@@ -42,23 +45,34 @@ Cloudflare Email Routing → contacto@<dominio> reenviado a Gmail existente
   edge, pero introduce un segundo vendor y costo variable (~$5-10/mes) donde
   Cloudflare solo puede cubrir el mismo alcance a $0/mes. Descartada a favor
   de la opción todo-Cloudflare.
+- **Cloudflare Email Routing** para el correo profesional: es gratis pero
+  solo reenvía correo entrante — no da credenciales SMTP para *enviar* como
+  `contacto@clcolor.com`. El negocio necesita responder a clientes
+  mostrando el remitente corporativo real, no el Gmail personal. Descartada
+  a favor de un buzón real (Hostinger Business Email).
 
 ## Componentes
 
 ### 1. Dominio y DNS
 
-- Registrar el dominio nuevo vía **Cloudflare Registrar** (precio "at-cost",
-  sin margen) si el TLD elegido está soportado (`.com` sí). Si se prefiere un
-  TLD no soportado por Cloudflare Registrar (p. ej. `.studio`, `.design`),
-  registrar en Namecheap/Porkbun y apuntar el DNS a Cloudflare de todas
-  formas.
-- DNS gestionado 100% en Cloudflare (proxy activado para CDN/SSL/DDoS).
+- Dominio `clcolor.com` registrado en **Hostinger** (decisión del usuario,
+  bundle con el buzón de correo).
+- El DNS se delega a **Cloudflare** (Add a Site + cambio de nameservers en
+  Hostinger) para conservar Cloudflare Pages, Web Analytics y la
+  verificación de dominio en Resend. El registro del dominio y el DNS
+  autoritativo quedan en proveedores distintos — es un patrón común y
+  soportado (comprar en un registrador, delegar DNS a otro).
 
 ### 2. Correo profesional
 
-- **Cloudflare Email Routing** (gratis): reenvía `contacto@<dominio>` (u
-  otras direcciones) al Gmail actual (`cleanlinecolorstudio@gmail.com`), sin
-  necesidad de Google Workspace de pago.
+- **Hostinger Business Email** (buzón real, ~$7-19/año según el período de
+  renovación): `contacto@clcolor.com` con capacidad de enviar y recibir
+  correo de forma nativa (webmail + IMAP/SMTP), necesario porque el negocio
+  responde a clientes mostrando el remitente corporativo real.
+- Los registros MX/SPF/DKIM que pida Hostinger se agregan en el DNS de
+  Cloudflare. El SPF debe quedar en un único registro TXT que incluya tanto
+  Resend (envío del formulario) como Hostinger (buzón), no dos registros
+  SPF separados.
 
 ### 3. Sitio estático — Cloudflare Pages
 
@@ -112,12 +126,12 @@ Cloudflare Email Routing → contacto@<dominio> reenviado a Gmail existente
 
 | Partida | Costo |
 |---|---|
-| Dominio | ~$10-15/año (~$1/mes) |
+| Dominio (Hostinger, `clcolor.com`) | ~$10-20/año (~$1-1.70/mes) |
+| Hostinger Business Email | ~$7-19/año según renovación (~$0.60-1.60/mes) |
 | Cloudflare Pages | $0/mes (free tier) |
 | Cloudflare Functions | $0/mes (free tier, 100k req/día) |
-| Resend (email) | $0/mes (free tier, 3,000 emails/mes) |
-| Cloudflare Email Routing | $0/mes |
-| **Total** | **~$1/mes**, muy por debajo del presupuesto de $10/mes |
+| Resend (email transaccional del formulario) | $0/mes (free tier, 3,000 emails/mes) |
+| **Total** | **~$1.50-2/mes**, por debajo del presupuesto de $10/mes |
 
 Margen amplio para crecer hacia D1/R2 (Fase 2) sin salir de free tiers en el
 corto/mediano plazo.

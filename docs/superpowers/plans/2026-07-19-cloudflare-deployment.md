@@ -4,15 +4,15 @@
 
 **Goal:** Publicar `Proyecto_CLC_Ver_1.07` en producción sobre Cloudflare Pages con un dominio propio, un formulario de contacto que envía correo real (reemplazando el `mailto:` actual), y las piezas de plataforma (DNS, correo, analítica) configuradas — todo dentro de Cloudflare, bajo $10/mes.
 
-**Architecture:** Sitio estático servido por Cloudflare Pages desde el repo `JAAG2021/clc-studio-design` (sin build step). El formulario de contacto pasa de `action="mailto:"` a un `fetch()` hacia una Cloudflare Pages Function (`/functions/api/contact.js`) que valida los datos y envía el correo vía la API de Resend. Dominio, DNS, y correo profesional (Email Routing) también viven en Cloudflare.
+**Architecture:** Sitio estático servido por Cloudflare Pages desde el repo `JAAG2021/clc-studio-design` (sin build step). El formulario de contacto pasa de `action="mailto:"` a un `fetch()` hacia una Cloudflare Pages Function (`/functions/api/contact.js`) que valida los datos y envía el correo vía la API de Resend. El dominio `clcolor.com` se compra en Hostinger (junto con un buzón real, Hostinger Business Email, para `contacto@clcolor.com`), pero el DNS se delega a Cloudflare para conservar Pages, Web Analytics y la verificación de dominio en Resend.
 
 **Tech Stack:** HTML/CSS/JS estático (sin cambios), Cloudflare Pages, Cloudflare Pages Functions (runtime Workers), Node.js + `wrangler` (solo como herramienta local de desarrollo/pruebas, no en producción), Resend (envío de email), `node:test` (pruebas unitarias de la validación).
 
 ## Global Constraints
 
-- Presupuesto: menor a $10/mes (estimado real ~$1/mes, solo el dominio).
+- Presupuesto: menor a $10/mes (estimado real ~$1.50-2/mes: dominio + buzón de Hostinger Business Email).
 - Uso comercial permitido en todos los servicios elegidos (por esto se descartó el free tier de Vercel).
-- Todo el stack de plataforma vive en Cloudflare: Pages, Functions, Registrar/DNS, Email Routing. (D1/R2 quedan reservados para una Fase 2 de CMS, fuera de alcance de este plan.)
+- Dominio (`clcolor.com`) y correo (`contacto@clcolor.com`) se compran en Hostinger — decisión posterior al spec original: Cloudflare Email Routing solo reenvía correo entrante, no permite *enviar* como `contacto@clcolor.com`, y el negocio necesita responder a clientes con remitente corporativo real. El resto de la plataforma (Pages, Functions, DNS) sigue en Cloudflare: el DNS de `clcolor.com` se delega a Cloudflare aunque el dominio se haya comprado en Hostinger. (D1/R2 quedan reservados para una Fase 2 de CMS, fuera de alcance de este plan.)
 - El sitio permanece estático, sin build step (HTML/CSS/JS plano tal como existe hoy).
 - Límite de Cloudflare Pages: 25 MiB por archivo. Ya verificado: el archivo más pesado en `recursos/` es un GIF de 15MB, dentro del límite.
 - Resend free tier: 3,000 emails/mes — suficiente para el volumen esperado del formulario de contacto.
@@ -536,18 +536,26 @@ No se hace commit en este task — es configuración de plataforma, no cambios e
 
 ---
 
-### Task 6: Registrar el dominio y configurar DNS en Cloudflare
+### Task 6: Registrar el dominio en Hostinger y delegar el DNS a Cloudflare
 
 **Files:** ninguno.
 
-- [ ] **Step 1: Elegir y registrar el dominio**
+- [ ] **Step 1: Comprar `clcolor.com` en Hostinger**
 
-Desde el dashboard de Cloudflare → Domain Registration → Register a Domain, buscar el dominio deseado (ej. `clcstudiodesign.com`). Si el TLD no está soportado por Cloudflare Registrar (p. ej. `.studio`, `.design`), registrarlo en Namecheap o Porkbun y luego agregar el sitio a Cloudflare (Add a Site) para delegar el DNS, actualizando los nameservers en el registrador externo según lo que indique Cloudflare.
+Completar la compra ya iniciada en Hostinger (dominio + Hostinger Business Email). El buzón de correo se configura más adelante en la Task 9 — este paso es solo el registro del dominio y la contratación del plan de correo.
 
-- [ ] **Step 2: Verificar que el dominio quedó activo en Cloudflare**
+- [ ] **Step 2: Agregar el sitio a Cloudflare y delegar el DNS**
 
-Run: `dig NS <tu-dominio> +short`
-Expected: dos nameservers con el patrón `*.ns.cloudflare.com`.
+En el dashboard de Cloudflare → Add a Site → escribir `clcolor.com`. Cloudflare escanea los registros DNS existentes e indica dos nameservers (formato `*.ns.cloudflare.com`).
+
+- [ ] **Step 3: Actualizar los nameservers en Hostinger**
+
+En hPanel (panel de Hostinger) → Domains → `clcolor.com` → Nameservers, reemplazar los nameservers por defecto de Hostinger por los dos que dio Cloudflare en el Step 2.
+
+- [ ] **Step 4: Verificar que el dominio quedó activo en Cloudflare**
+
+Run: `dig NS clcolor.com +short`
+Expected: los dos nameservers `*.ns.cloudflare.com` indicados por Cloudflare (puede tardar hasta un par de horas en propagar).
 
 ---
 
@@ -557,14 +565,14 @@ Expected: dos nameservers con el patrón `*.ns.cloudflare.com`.
 
 - [ ] **Step 1: Agregar el dominio personalizado al proyecto de Pages**
 
-En el proyecto de Pages (Task 5) → Custom domains → Set up a custom domain → escribir `<tu-dominio>` (y opcionalmente `www.<tu-dominio>`). Cloudflare crea el registro DNS automáticamente porque el dominio ya vive en la misma cuenta.
+En el proyecto de Pages (Task 5) → Custom domains → Set up a custom domain → escribir `clcolor.com` (y opcionalmente `www.clcolor.com`). Cloudflare crea el registro DNS automáticamente porque el dominio ya vive en la misma cuenta.
 
 - [ ] **Step 2: Verificar HTTPS y contenido en el dominio final**
 
-Run: `curl -sI https://<tu-dominio>/ | head -1`
+Run: `curl -sI https://clcolor.com/ | head -1`
 Expected: `HTTP/2 200`
 
-Run: `curl -s https://<tu-dominio>/ | grep -o '<title>[^<]*</title>'`
+Run: `curl -s https://clcolor.com/ | grep -o '<title>[^<]*</title>'`
 Expected: imprime el `<title>` real de `index.html`, confirmando que sirve el contenido correcto (no una página de error/placeholder).
 
 ---
@@ -575,11 +583,13 @@ Expected: imprime el `<title>` real de `index.html`, confirmando que sirve el co
 
 - [ ] **Step 1: Agregar el dominio en Resend**
 
-En el dashboard de Resend → Domains → Add Domain → `<tu-dominio>`. Resend muestra registros DNS (SPF, DKIM, y opcionalmente DMARC) a agregar.
+En el dashboard de Resend → Domains → Add Domain → `clcolor.com`. Resend muestra registros DNS (SPF, DKIM, y opcionalmente DMARC) a agregar.
 
 - [ ] **Step 2: Agregar los registros DNS en Cloudflare**
 
 En el dashboard de Cloudflare del dominio → DNS → Records, agregar exactamente los registros TXT/CNAME que mostró Resend en el paso anterior.
+
+**Atención con el registro SPF**: un dominio solo puede tener **un** registro TXT de SPF (`v=spf1 ...`). Si al llegar a la Task 9 (buzón de Hostinger) ya existe un SPF de Resend, no se agrega un segundo TXT — se edita el existente para incluir ambos proveedores, por ejemplo `v=spf1 include:_spf.resend.com include:_spf.hostinger.com ~all` (usar los `include:` exactos que indique cada proveedor, no copiar este ejemplo literal). Confirmar el orden de las Tasks 8 y 9 al llegar a ese punto para mezclar el SPF en un solo registro.
 
 - [ ] **Step 3: Confirmar la verificación**
 
@@ -587,30 +597,52 @@ En Resend → Domains, esperar a que el estado del dominio cambie a "Verified" (
 
 - [ ] **Step 4: Actualizar la variable de entorno de producción**
 
-En Cloudflare Pages → Settings → Environment variables → Production, cambiar `CONTACT_FROM_EMAIL` de `onboarding@resend.dev` a algo como `contacto@<tu-dominio>`. Volver a desplegar (Retry deployment o un nuevo push) para que la Function tome el nuevo valor.
+En Cloudflare Pages → Settings → Environment variables → Production, cambiar `CONTACT_FROM_EMAIL` de `onboarding@resend.dev` a algo como `contacto@clcolor.com`. Volver a desplegar (Retry deployment o un nuevo push) para que la Function tome el nuevo valor.
 
 - [ ] **Step 5: Verificar el envío con el remitente definitivo**
 
-Repetir la verificación de la Task 5 Step 5 (POST a `/api/contact` en producción) y confirmar que el correo recibido ahora muestra como remitente `contacto@<tu-dominio>` en vez de `onboarding@resend.dev`.
+Repetir la verificación de la Task 5 Step 5 (POST a `/api/contact` en producción) y confirmar que el correo recibido ahora muestra como remitente `contacto@clcolor.com` en vez de `onboarding@resend.dev`.
 
 ---
 
-### Task 9: Configurar Cloudflare Email Routing (correo profesional)
+### Task 9: Configurar el buzón de Hostinger Business Email para `contacto@clcolor.com`
 
 **Files:** ninguno.
 
-- [ ] **Step 1: Activar Email Routing**
+Se eligió un buzón real (Hostinger Business Email) en vez de Cloudflare Email Routing porque el negocio necesita **responder** a clientes mostrando `contacto@clcolor.com` como remitente real, no solo **recibir** correo reenviado — Cloudflare Email Routing es únicamente de reenvío entrante y no da credenciales SMTP para enviar como esa dirección.
 
-En el dashboard de Cloudflare del dominio → Email → Email Routing → Enable. Cloudflare agrega automáticamente los registros MX necesarios (si el dominio ya está proxeado por Cloudflare, esto es automático).
+- [ ] **Step 1: Crear el buzón en hPanel**
 
-- [ ] **Step 2: Crear la regla de reenvío**
+En hPanel (panel de Hostinger) → Emails → Business Email → crear la cuenta `contacto@clcolor.com` con una contraseña.
 
-Routing rules → Create address → dirección personalizada `contacto@<tu-dominio>` → Destination: el Gmail existente (`cleanlinecolorstudio@gmail.com`). Confirmar el destino desde el correo de verificación que Cloudflare envía a esa bandeja.
+- [ ] **Step 2: Obtener los registros DNS del correo**
 
-- [ ] **Step 3: Verificar el reenvío**
+hPanel muestra los registros MX, SPF y DKIM necesarios para `clcolor.com` (normalmente Hostinger ofrece agregarlos automáticamente si detecta que el DNS está en Cloudflare vía API, o los lista para agregarlos a mano).
 
-Enviar un correo de prueba a `contacto@<tu-dominio>` desde cualquier cuenta externa.
-Expected: el correo llega a `cleanlinecolorstudio@gmail.com` en menos de un par de minutos.
+- [ ] **Step 3: Agregar los registros en Cloudflare DNS**
+
+En el dashboard de Cloudflare del dominio → DNS → Records:
+- Agregar el/los registro(s) MX que indique Hostinger.
+- Agregar el registro DKIM (TXT) tal cual lo entrega Hostinger.
+- Para SPF: si ya existe el TXT de Resend (Task 8), **editarlo** para incluir también `include:_spf.hostinger.com` (o el include exacto que indique Hostinger) en el mismo registro — no crear un segundo TXT de SPF.
+
+- [ ] **Step 4: Configurar el cliente de correo (webmail o IMAP)**
+
+Acceder a `contacto@clcolor.com` vía el webmail de Hostinger (o configurarlo en Gmail/Outlook por IMAP con las credenciales SMTP que da Hostinger), para poder enviar y recibir desde ese buzón directamente.
+
+- [ ] **Step 5: Verificar recepción**
+
+Enviar un correo de prueba desde cualquier cuenta externa a `contacto@clcolor.com`.
+Expected: llega al buzón en un par de minutos.
+
+- [ ] **Step 6: Verificar envío**
+
+Responder ese correo (o enviar uno nuevo) desde `contacto@clcolor.com` a una cuenta externa (ej. tu Gmail personal).
+Expected: el correo llega mostrando `contacto@clcolor.com` como remitente, sin anotaciones tipo "on behalf of" / "vía otro dominio".
+
+- [ ] **Step 7: Actualizar `CONTACT_TO_EMAIL` en producción**
+
+En Cloudflare Pages → Settings → Environment variables → Production, cambiar `CONTACT_TO_EMAIL` de `cleanlinecolorstudio@gmail.com` a `contacto@clcolor.com`. Volver a desplegar y repetir la verificación de la Task 5 Step 5 para confirmar que los mensajes del formulario ya llegan al buzón corporativo.
 
 ---
 
@@ -620,11 +652,11 @@ Expected: el correo llega a `cleanlinecolorstudio@gmail.com` en menos de un par 
 
 - [ ] **Step 1: Activar Web Analytics para el dominio**
 
-Dashboard de Cloudflare → Analytics & Logs → Web Analytics → Add a site → seleccionar `<tu-dominio>` → Automatic setup (inyección automática del beacon en las respuestas HTML del dominio proxeado; no requiere tocar el código del sitio).
+Dashboard de Cloudflare → Analytics & Logs → Web Analytics → Add a site → seleccionar `clcolor.com` → Automatic setup (inyección automática del beacon en las respuestas HTML del dominio proxeado; no requiere tocar el código del sitio).
 
 - [ ] **Step 2: Verificar que hay datos**
 
-Visitar `https://<tu-dominio>/` un par de veces desde el navegador, esperar 1-2 minutos, y revisar el dashboard de Web Analytics del sitio.
+Visitar `https://clcolor.com/` un par de veces desde el navegador, esperar 1-2 minutos, y revisar el dashboard de Web Analytics del sitio.
 Expected: aparecen al menos las visitas generadas manualmente (page views > 0).
 
 ---
@@ -666,4 +698,4 @@ git commit -m "chore: remove unused 15MB gallery GIF"
 
 ## Resumen de despliegue
 
-Al completar las Tasks 1-10, el sitio queda en producción en `https://<tu-dominio>` servido por Cloudflare Pages, con HTTPS/CDN/WAF automáticos, el formulario de contacto enviando correo real vía Resend, un correo profesional (`contacto@<tu-dominio>`) reenviando a Gmail, y analítica básica activa — todo por ~$1/mes (solo el dominio). La Task 11 es una mejora de rendimiento opcional. La Fase 2 (panel de CMS con D1/R2 para noticias/proyectos) queda fuera de este plan, para especificarse por separado cuando exista la necesidad real.
+Al completar las Tasks 1-10, el sitio queda en producción en `https://clcolor.com` servido por Cloudflare Pages, con HTTPS/CDN/WAF automáticos, el formulario de contacto enviando correo real vía Resend hacia `contacto@clcolor.com`, un buzón corporativo real (Hostinger Business Email) capaz de enviar y recibir, y analítica básica activa — todo por ~$1.50-2/mes (dominio + buzón de Hostinger). La Task 11 es una limpieza opcional (eliminar un archivo huérfano). La Fase 2 (panel de CMS con D1/R2 para noticias/proyectos) queda fuera de este plan, para especificarse por separado cuando exista la necesidad real.
