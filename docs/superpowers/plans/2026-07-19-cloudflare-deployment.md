@@ -816,16 +816,41 @@ En Cloudflare Pages → Settings → Environment variables → Production, cambi
 
 ### Task 10: Activar Cloudflare Web Analytics
 
-**Files:** ninguno (configuración de plataforma; no requiere editar HTML porque el dominio ya está proxeado por Cloudflare).
+**Files:** Modify: `index.html`, `noticias.html`, `politica-de-privacidad.html`, `proyecto.html`, `proyectos.html`, `terminos-y-condiciones.html` (agregar el snippet antes de `</head>` en cada una). `waxyweb.html` queda excluido — no lo enlaza ninguna página, es un archivo huérfano de la plantilla original.
+
+**Decisión final (distinta del diseño original)**: el "Automatic setup" (inyección automática a nivel de zona) nunca llegó a aplicarse después de esperar varios minutos — probablemente porque Cloudflare Pages sirve el contenido desde su propio pipeline de borde, no como un origen externo proxeado (que es el caso para el que está pensado el auto-injection). Se cambió a instalación manual del snippet.
 
 - [ ] **Step 1: Activar Web Analytics para el dominio**
 
-Dashboard de Cloudflare → Analytics & Logs → Web Analytics → Add a site → seleccionar `clcolor.com` → Automatic setup (inyección automática del beacon en las respuestas HTML del dominio proxeado; no requiere tocar el código del sitio).
+Dashboard de Cloudflare → Analytics & Logs → Web Analytics → Add a site → seleccionar `clcolor.com`. En "Real User Measurements (RUM)", elegir **"Enable with JS Snippet installation"** (no "Enable" / Automatic).
 
-- [ ] **Step 2: Verificar que hay datos**
+- [ ] **Step 2: Copiar el snippet y agregarlo a cada página**
 
-Visitar `https://clcolor.com/` un par de veces desde el navegador, esperar 1-2 minutos, y revisar el dashboard de Web Analytics del sitio.
+Cloudflare muestra un snippet como:
+
+```html
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "TU_TOKEN"}'></script><!-- End Cloudflare Web Analytics -->
+```
+
+Agregarlo justo antes de `</head>` en cada uno de los 6 archivos HTML reales del sitio (todos excepto `waxyweb.html`).
+
+- [ ] **Step 3: Commit y deploy**
+
+```bash
+git add index.html noticias.html politica-de-privacidad.html proyecto.html proyectos.html terminos-y-condiciones.html
+git commit -m "feat: add Cloudflare Web Analytics snippet manually to all pages"
+git push origin main
+```
+
+- [ ] **Step 4: Verificar que hay datos**
+
+Esperar a que el push despliegue (unos 20-30 segundos), visitar `https://clcolor.com/` un par de veces desde el navegador, esperar 1-2 minutos, y revisar el dashboard de Web Analytics del sitio.
 Expected: aparecen al menos las visitas generadas manualmente (page views > 0).
+
+```bash
+curl -s https://clcolor.com/ | grep -o 'cloudflareinsights'
+```
+Expected: imprime `cloudflareinsights`, confirmando que el snippet ya está en el HTML servido.
 
 ---
 
