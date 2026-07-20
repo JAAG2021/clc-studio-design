@@ -352,8 +352,7 @@
       <img class="contact-form-tag" src="recursos/Formulario/Etiqueta.png" alt="" />
     </div>
 
-    <form class="contact-form" action="mailto:cleanlinecolorstudio@gmail.com" method="post" enctype="text/plain"
-      accept-charset="UTF-8">
+    <form class="contact-form" id="contact-form">
       <div class="contact-field">
         <label for="contact-name">Nombre y Apellido</label>
         <input id="contact-name" name="nombre_apellido" type="text" placeholder="Escribe tu nombre y apellido"
@@ -368,8 +367,12 @@
 
       <div class="contact-field">
         <label for="contact-phone">Teléfono</label>
-        <input id="contact-phone" name="telefono" type="tel" placeholder="(012) 345-678" autocomplete="tel"
-          inputmode="tel" />
+        <div class="contact-phone-group">
+          <select id="contact-phone-country" name="telefono_pais" autocomplete="tel-country-code"
+            aria-label="País para el teléfono"></select>
+          <input id="contact-phone" name="telefono" type="tel" placeholder="(012) 345-678" autocomplete="tel-national"
+            inputmode="tel" />
+        </div>
       </div>
 
       <div class="contact-field">
@@ -384,6 +387,7 @@
       </div>
 
       <button class="contact-submit" type="submit" disabled aria-disabled="true">Enviar</button>
+      <p id="contact-status" class="contact-status" role="status" aria-live="polite"></p>
     </form>
   </section>
 
@@ -449,6 +453,7 @@
     </div>
   </footer>
 
+  <script src="vendor/libphonenumber-min.js"></script>
   <script src="script.js"></script>
 </body>
 

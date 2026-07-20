@@ -839,6 +839,34 @@ div .label {
   box-shadow: 0 0 0 3px rgba(77, 90, 196, 0.16);
 }
 
+.contact-phone-group {
+  display: flex;
+  gap: 8px;
+}
+
+.contact-phone-group select {
+  flex: 0 0 auto;
+  max-width: 40%;
+  border: 1px solid rgba(77, 77, 77, 0.28);
+  border-radius: 4px;
+  background: #fff;
+  color: #4d4d4d;
+  font-size: 15px;
+  padding: 10px 8px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.contact-phone-group select:focus {
+  border-color: #4d5ac4;
+  box-shadow: 0 0 0 3px rgba(77, 90, 196, 0.16);
+}
+
+.contact-phone-group input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .contact-submit {
   display: inline-flex;
   align-items: center;
@@ -867,6 +895,16 @@ div .label {
 .contact-submit:not(:disabled):hover {
   background: #3f49a6;
   transform: translateY(-1px);
+}
+
+.contact-status {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #4d5ac4;
+}
+
+.contact-status--error {
+  color: #c0392b;
 }
 
 /* --- Service Section --- */

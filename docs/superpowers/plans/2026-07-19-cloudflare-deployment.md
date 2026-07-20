@@ -345,12 +345,21 @@ git commit -m "feat: add Cloudflare Pages Function for contact form email delive
 ### Task 4: Reemplazar el `mailto:` del formulario por la Function
 
 **Files:**
-- Modify: `index.html:355`
+- Modify: `index.html:355` (form), `index.html` (campo de teléfono), `index.html` (script tags al final del `<body>`)
 - Modify: `script.js:219-254`
-- Modify: `style.css` (después de la regla `.contact-submit:not(:disabled):hover`, línea 870)
+- Modify: `style.css` (después de la regla `.contact-submit:not(:disabled):hover`)
+- Create: `vendor/libphonenumber-min.js` (copiado del paquete npm, ver Step 4)
+- Modify: `package.json`, `pnpm-lock.yaml` (dependencia `libphonenumber-js`, usada solo para generar el bundle de navegador — no se importa en runtime del sitio ni en la Function)
 
 **Interfaces:**
 - Consumes: `POST /api/contact` (Task 3) — mismo contrato de request/response.
+- Consumes: global `window.libphonenumber` (expuesto por `vendor/libphonenumber-min.js`) — funciones `getCountries()`, `getCountryCallingCode(country)`, `isValidPhoneNumber(input, country)`, `parsePhoneNumberFromString(input, country)`.
+
+Durante la implementación surgieron dos ajustes no previstos en el diseño original, ambos por retroalimentación directa del usuario probando el formulario:
+1. **Validación de formato de email en el cliente** (no solo en el servidor) — feedback inmediato sin esperar la red.
+2. **Validación de teléfono por país** con selector de país + `libphonenumber-js`, en vez de solo "campo no vacío".
+
+Al agregar la validación de email se detectó además una condición de carrera: si dos envíos se disparan (por ejemplo un doble click), la respuesta de un envío anterior podía llegar después y sobreescribir el mensaje de uno más reciente. Se corrigió con un contador de secuencia (`latestRequestId`) que descarta respuestas de envíos que ya no son el más reciente.
 
 - [ ] **Step 1: Quitar el envío por `mailto:` del formulario**
 
@@ -381,7 +390,57 @@ agregar:
 <p id="contact-status" class="contact-status" role="status" aria-live="polite"></p>
 ```
 
-- [ ] **Step 3: Reemplazar la lógica de `script.js`**
+- [ ] **Step 3: Agregar el selector de país al campo de teléfono**
+
+En `index.html`, reemplazar:
+
+```html
+<div class="contact-field">
+  <label for="contact-phone">Teléfono</label>
+  <input id="contact-phone" name="telefono" type="tel" placeholder="(012) 345-678" autocomplete="tel"
+    inputmode="tel" />
+</div>
+```
+
+por:
+
+```html
+<div class="contact-field">
+  <label for="contact-phone">Teléfono</label>
+  <div class="contact-phone-group">
+    <select id="contact-phone-country" name="telefono_pais" autocomplete="tel-country-code"
+      aria-label="País para el teléfono"></select>
+    <input id="contact-phone" name="telefono" type="tel" placeholder="(012) 345-678" autocomplete="tel-national"
+      inputmode="tel" />
+  </div>
+</div>
+```
+
+(El `aria-label` en el `<select>` es necesario — sin él, el linter de accesibilidad marca el control como sin nombre accesible, ya que el `<label for="contact-phone">` de arriba solo describe el input de teléfono, no el select de país.)
+
+- [ ] **Step 4: Instalar `libphonenumber-js` y copiar su bundle de navegador**
+
+El sitio no usa build step (HTML/CSS/JS plano servido tal cual), así que no hay forma de `import` un paquete npm en el navegador. La solución: instalar el paquete (para tener una versión rastreada en `package.json`/lockfile) y copiar manualmente su bundle pre-compilado a `vendor/`, que se sirve como archivo estático más.
+
+Run: `pnpm add libphonenumber-js`
+Expected: agrega `libphonenumber-js` a `dependencies` en `package.json` y actualiza `pnpm-lock.yaml`.
+
+Copiar el bundle "min" (metadata reducida, cubre todos los países con buen balance tamaño/precisión — las alternativas son `max`, más precisa y pesada, y `mobile`, solo números móviles):
+
+```bash
+mkdir -p vendor
+cp "node_modules/.pnpm/libphonenumber-js@1.13.9/node_modules/libphonenumber-js/bundle/libphonenumber-min.js" vendor/libphonenumber-min.js
+```
+
+(Ajustar la ruta si la versión instalada difiere de `1.13.9` — verificar con `ls node_modules/.pnpm | grep libphonenumber-js`. Cuando se actualice el paquete en el futuro, hay que repetir este `cp` para refrescar el bundle.)
+
+En `index.html`, antes de `<script src="script.js"></script>`, agregar:
+
+```html
+<script src="vendor/libphonenumber-min.js"></script>
+```
+
+- [ ] **Step 5: Reemplazar la lógica de `script.js`**
 
 En `script.js`, reemplazar el bloque completo `initContactFormValidation` (líneas 219-254) por:
 
@@ -394,12 +453,48 @@ En `script.js`, reemplazar el bloque completo `initContactFormValidation` (líne
   const fields = Array.from(form.querySelectorAll('input, textarea'));
   const submitButton = form.querySelector('.contact-submit');
   const statusEl = document.getElementById('contact-status');
+  const emailField = form.querySelector('#contact-email');
+  const phoneField = form.querySelector('#contact-phone');
+  const phoneCountrySelect = form.querySelector('#contact-phone-country');
   if (!submitButton || fields.length === 0) return;
 
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const hasPhoneLib = Boolean(window.libphonenumber && phoneCountrySelect);
+
+  if (hasPhoneLib) {
+    const countryNames = new Intl.DisplayNames(['es'], { type: 'region' });
+    const countries = libphonenumber
+      .getCountries()
+      .map((code) => ({
+        code,
+        name: countryNames.of(code) || code,
+        callingCode: libphonenumber.getCountryCallingCode(code)
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+    phoneCountrySelect.innerHTML = countries
+      .map(({ code, name, callingCode }) => `<option value="${code}">${name} (+${callingCode})</option>`)
+      .join('');
+    phoneCountrySelect.value = countries.some((country) => country.code === 'SV') ? 'SV' : countries[0]?.code || '';
+  }
+
   const isFormComplete = () => fields.every((field) => field.value.trim().length > 0);
+  const isEmailValid = () => !emailField || EMAIL_RE.test(emailField.value.trim());
+  const isPhoneValid = () => {
+    if (!phoneField) return true;
+    if (!hasPhoneLib) return true;
+    return libphonenumber.isValidPhoneNumber(phoneField.value.trim(), phoneCountrySelect.value);
+  };
+
+  function formattedPhone() {
+    if (!phoneField) return '';
+    if (!hasPhoneLib) return phoneField.value.trim();
+    const parsed = libphonenumber.parsePhoneNumberFromString(phoneField.value.trim(), phoneCountrySelect.value);
+    return parsed ? parsed.formatInternational() : phoneField.value.trim();
+  }
 
   function updateSubmitState() {
-    const complete = isFormComplete();
+    const complete = isFormComplete() && isEmailValid() && isPhoneValid();
     submitButton.disabled = !complete;
     submitButton.setAttribute('aria-disabled', String(!complete));
   }
@@ -410,10 +505,14 @@ En `script.js`, reemplazar el bloque completo `initContactFormValidation` (líne
     statusEl.classList.toggle('contact-status--error', Boolean(isError));
   }
 
+  let latestRequestId = 0;
+
   fields.forEach((field) => {
     field.addEventListener('input', updateSubmitState);
     field.addEventListener('change', updateSubmitState);
   });
+
+  phoneCountrySelect?.addEventListener('change', updateSubmitState);
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -425,13 +524,27 @@ En `script.js`, reemplazar el bloque completo `initContactFormValidation` (líne
       return;
     }
 
+    if (!isEmailValid()) {
+      setStatus('Formato de email inválido.', true);
+      emailField?.focus();
+      return;
+    }
+
+    if (!isPhoneValid()) {
+      setStatus('Formato de teléfono inválido para el país seleccionado.', true);
+      phoneField?.focus();
+      return;
+    }
+
     const payload = {
       nombre_apellido: form.querySelector('#contact-name').value.trim(),
       empresa: form.querySelector('#contact-company').value.trim(),
-      telefono: form.querySelector('#contact-phone').value.trim(),
+      telefono: formattedPhone(),
       email: form.querySelector('#contact-email').value.trim(),
       mensaje: form.querySelector('#contact-message').value.trim()
     };
+
+    const requestId = ++latestRequestId;
 
     submitButton.disabled = true;
     setStatus('Enviando...', false);
@@ -443,6 +556,7 @@ En `script.js`, reemplazar el bloque completo `initContactFormValidation` (líne
     })
       .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
       .then(({ ok, data }) => {
+        if (requestId !== latestRequestId) return;
         if (!ok || !data.ok) {
           throw new Error(data?.error || 'No se pudo enviar el mensaje.');
         }
@@ -450,9 +564,11 @@ En `script.js`, reemplazar el bloque completo `initContactFormValidation` (líne
         form.reset();
       })
       .catch((error) => {
+        if (requestId !== latestRequestId) return;
         setStatus(error.message, true);
       })
       .finally(() => {
+        if (requestId !== latestRequestId) return;
         updateSubmitState();
       });
   });
@@ -463,9 +579,9 @@ En `script.js`, reemplazar el bloque completo `initContactFormValidation` (líne
 })();
 ```
 
-- [ ] **Step 4: Agregar estilos mínimos para el mensaje de estado**
+- [ ] **Step 6: Agregar estilos para el mensaje de estado y el selector de país**
 
-En `style.css`, después de la regla `.contact-submit:not(:disabled):hover` (línea 870), agregar:
+En `style.css`, después de la regla `.contact-submit:not(:disabled):hover`, agregar:
 
 ```css
 .contact-status {
@@ -477,25 +593,59 @@ En `style.css`, después de la regla `.contact-submit:not(:disabled):hover` (lí
 .contact-status--error {
   color: #c0392b;
 }
+
+.contact-phone-group {
+  display: flex;
+  gap: 8px;
+}
+
+.contact-phone-group select {
+  flex: 0 0 auto;
+  max-width: 40%;
+  border: 1px solid rgba(77, 77, 77, 0.28);
+  border-radius: 4px;
+  background: #fff;
+  color: #4d4d4d;
+  font-size: 15px;
+  padding: 10px 8px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.contact-phone-group select:focus {
+  border-color: #4d5ac4;
+  box-shadow: 0 0 0 3px rgba(77, 90, 196, 0.16);
+}
+
+.contact-phone-group input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 ```
 
-- [ ] **Step 5: Verificar manualmente en el navegador**
+- [ ] **Step 7: Verificar manualmente en el navegador**
 
-Con `pnpm run dev` corriendo (Task 3), abrir `http://127.0.0.1:8788/index.html`, ir a la sección de contacto, llenar todos los campos y enviar.
-Expected: el botón se deshabilita brevemente, aparece "Enviando...", luego "¡Mensaje enviado! Te contactaremos pronto." en color de acento, el formulario se limpia, y llega el correo a la bandeja configurada.
+Con `pnpm run dev` corriendo (Task 3), abrir `http://127.0.0.1:8788/` (no `/index.html` directamente — Cloudflare Pages redirige `/index.html` a `/` con un 308), ir a la sección de contacto:
 
-Repetir dejando el campo de email con un valor inválido antes de completar el resto — Expected: al enviar aparece el mensaje de error en rojo y el formulario no se limpia.
+- Llenar todos los campos con datos válidos (el selector de país debe mostrar El Salvador seleccionado por defecto) y enviar. Expected: botón deshabilitado brevemente, "Enviando...", luego "¡Mensaje enviado! Te contactaremos pronto.", el formulario se limpia, y llega el correo a la bandeja configurada.
+- Repetir con un email de formato inválido (ej. `algo@algo`, sin punto): el botón debe quedar deshabilitado automáticamente sin llegar a llamar a la red.
+- Repetir con un teléfono inválido para el país seleccionado (ej. muy corto): mismo resultado, botón deshabilitado.
+- Confirmar contra el servidor directamente que la validación del lado servidor sigue siendo la autoridad final (no confiar solo en la validación del cliente):
+  ```bash
+  curl -i -X POST http://127.0.0.1:8788/api/contact -H "Content-Type: application/json" -d '{"nombre_apellido":"Prueba","email":"jaagsolutions@esprueba","mensaje":"prueba"}'
+  ```
+  Expected: `400 Bad Request` con `{"fields":{"email":"Formato de email inválido."}}`.
 
-- [ ] **Step 6: Correr los tests unitarios para confirmar que no se rompió nada**
+- [ ] **Step 8: Correr los tests unitarios para confirmar que no se rompió nada**
 
 Run: `pnpm test`
 Expected: PASS — los 5 tests de la Task 2 siguen pasando (no se tocó `_validate.js`).
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add index.html script.js style.css
-git commit -m "feat: submit contact form to /api/contact instead of mailto:"
+git add index.html script.js style.css package.json pnpm-lock.yaml vendor/libphonenumber-min.js
+git commit -m "feat: submit contact form to /api/contact with client-side email/phone validation"
 ```
 
 ---

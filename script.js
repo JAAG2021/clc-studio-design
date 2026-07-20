@@ -216,36 +216,132 @@ function getLocalMouse(canvas) {
   window.addEventListener('resize', resize);
 })();
 
-/* Contact form completeness guard */
-(function initContactFormValidation() {
+/* Contact form: completeness guard + submission via Cloudflare Function */
+(function initContactForm() {
   const form = document.querySelector('.contact-form');
   if (!form) return;
 
   const fields = Array.from(form.querySelectorAll('input, textarea'));
   const submitButton = form.querySelector('.contact-submit');
+  const statusEl = document.getElementById('contact-status');
+  const emailField = form.querySelector('#contact-email');
+  const phoneField = form.querySelector('#contact-phone');
+  const phoneCountrySelect = form.querySelector('#contact-phone-country');
   if (!submitButton || fields.length === 0) return;
 
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const hasPhoneLib = Boolean(window.libphonenumber && phoneCountrySelect);
+
+  if (hasPhoneLib) {
+    const countryNames = new Intl.DisplayNames(['es'], { type: 'region' });
+    const countries = libphonenumber
+      .getCountries()
+      .map((code) => ({
+        code,
+        name: countryNames.of(code) || code,
+        callingCode: libphonenumber.getCountryCallingCode(code)
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+    phoneCountrySelect.innerHTML = countries
+      .map(({ code, name, callingCode }) => `<option value="${code}">${name} (+${callingCode})</option>`)
+      .join('');
+    phoneCountrySelect.value = countries.some((country) => country.code === 'SV') ? 'SV' : countries[0]?.code || '';
+  }
+
   const isFormComplete = () => fields.every((field) => field.value.trim().length > 0);
+  const isEmailValid = () => !emailField || EMAIL_RE.test(emailField.value.trim());
+  const isPhoneValid = () => {
+    if (!phoneField) return true;
+    if (!hasPhoneLib) return true;
+    return libphonenumber.isValidPhoneNumber(phoneField.value.trim(), phoneCountrySelect.value);
+  };
+
+  function formattedPhone() {
+    if (!phoneField) return '';
+    if (!hasPhoneLib) return phoneField.value.trim();
+    const parsed = libphonenumber.parsePhoneNumberFromString(phoneField.value.trim(), phoneCountrySelect.value);
+    return parsed ? parsed.formatInternational() : phoneField.value.trim();
+  }
 
   function updateSubmitState() {
-    const complete = isFormComplete();
+    const complete = isFormComplete() && isEmailValid() && isPhoneValid();
     submitButton.disabled = !complete;
     submitButton.setAttribute('aria-disabled', String(!complete));
   }
+
+  function setStatus(message, isError) {
+    if (!statusEl) return;
+    statusEl.textContent = message;
+    statusEl.classList.toggle('contact-status--error', Boolean(isError));
+  }
+
+  let latestRequestId = 0;
 
   fields.forEach((field) => {
     field.addEventListener('input', updateSubmitState);
     field.addEventListener('change', updateSubmitState);
   });
 
+  phoneCountrySelect?.addEventListener('change', updateSubmitState);
+
   form.addEventListener('submit', (event) => {
+    event.preventDefault();
     updateSubmitState();
 
-    if (isFormComplete()) return;
+    if (!isFormComplete()) {
+      const firstEmptyField = fields.find((field) => field.value.trim().length === 0);
+      firstEmptyField?.focus();
+      return;
+    }
 
-    event.preventDefault();
-    const firstEmptyField = fields.find((field) => field.value.trim().length === 0);
-    firstEmptyField?.focus();
+    if (!isEmailValid()) {
+      setStatus('Formato de email inválido.', true);
+      emailField?.focus();
+      return;
+    }
+
+    if (!isPhoneValid()) {
+      setStatus('Formato de teléfono inválido para el país seleccionado.', true);
+      phoneField?.focus();
+      return;
+    }
+
+    const payload = {
+      nombre_apellido: form.querySelector('#contact-name').value.trim(),
+      empresa: form.querySelector('#contact-company').value.trim(),
+      telefono: formattedPhone(),
+      email: form.querySelector('#contact-email').value.trim(),
+      mensaje: form.querySelector('#contact-message').value.trim()
+    };
+
+    const requestId = ++latestRequestId;
+
+    submitButton.disabled = true;
+    setStatus('Enviando...', false);
+
+    fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+      .then(({ ok, data }) => {
+        if (requestId !== latestRequestId) return;
+        if (!ok || !data.ok) {
+          throw new Error(data?.error || 'No se pudo enviar el mensaje.');
+        }
+        setStatus('¡Mensaje enviado! Te contactaremos pronto.', false);
+        form.reset();
+      })
+      .catch((error) => {
+        if (requestId !== latestRequestId) return;
+        setStatus(error.message, true);
+      })
+      .finally(() => {
+        if (requestId !== latestRequestId) return;
+        updateSubmitState();
+      });
   });
 
   window.addEventListener('pageshow', updateSubmitState);
