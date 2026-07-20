@@ -98,9 +98,13 @@ Hostinger Business Email → buzón real contacto@clcolor.com (envío y recepci�
   `script.js` hacia una Cloudflare Function propia
   (`/functions/api/contact.js`).
 - La Function valida los campos recibidos y envía el correo vía **Resend**
-  (free tier: 3,000 emails/mes, suficiente para el volumen esperado) a la
-  dirección de contacto del dominio (o al Gmail actual mientras se configura
-  el correo del dominio).
+  (free tier: 3,000 emails/mes, suficiente para el volumen esperado) a
+  `contacto@clcolor.com`.
+- Resend se verificó sobre el subdominio **`mail.clcolor.com`** (no la raíz)
+  — el remitente queda como `formulario@mail.clcolor.com`. Al ser un
+  subdominio, sus registros DNS (SPF/DKIM) quedan completamente separados
+  del TXT de SPF del buzón de Hostinger en la raíz del dominio, evitando
+  cualquier fusión de registros.
 - La API key de Resend se guarda como secret de Cloudflare Pages, nunca en
   el repo.
 

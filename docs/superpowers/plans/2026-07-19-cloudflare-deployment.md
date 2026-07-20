@@ -743,27 +743,33 @@ Expected: imprime el `<title>` real de `index.html`, confirmando que sirve el co
 
 **Files:** ninguno.
 
-- [ ] **Step 1: Agregar el dominio en Resend**
+**Decisión final (distinta del diseño original)**: se verificó en Resend el subdominio **`mail.clcolor.com`**, no la raíz `clcolor.com`. Razón: el correo del formulario de contacto es una notificación automática hacia el estudio (usa `reply_to` con el correo del visitante, así que nadie responde directo a este remitente), no necesita salir como `contacto@clcolor.com`. Usar un subdominio separa por completo los registros DNS de Resend (bajo `send.mail.clcolor.com` y `resend._domainkey.mail.clcolor.com`) del TXT de SPF que ya usa el buzón de Hostinger en la raíz — **elimina totalmente la necesidad de fusionar registros SPF** que se anticipaba en el diseño original.
 
-En el dashboard de Resend → Domains → Add Domain → `clcolor.com`. Resend muestra registros DNS (SPF, DKIM, y opcionalmente DMARC) a agregar.
+- [ ] **Step 1: Agregar el subdominio en Resend**
 
-- [ ] **Step 2: Agregar los registros DNS en Cloudflare**
+En el dashboard de Resend → Domains → Add Domain → `mail.clcolor.com` (región São Paulo u otra cercana).
 
-En el dashboard de Cloudflare del dominio → DNS → Records, agregar exactamente los registros TXT/CNAME que mostró Resend en el paso anterior.
+- [ ] **Step 2: Autorizar la configuración automática de DNS**
 
-**Atención con el registro SPF**: un dominio solo puede tener **un** registro TXT de SPF (`v=spf1 ...`). Si al llegar a la Task 9 (buzón de Hostinger) ya existe un SPF de Resend, no se agrega un segundo TXT — se edita el existente para incluir ambos proveedores, por ejemplo `v=spf1 include:_spf.resend.com include:_spf.hostinger.com ~all` (usar los `include:` exactos que indique cada proveedor, no copiar este ejemplo literal). Confirmar el orden de las Tasks 8 y 9 al llegar a ese punto para mezclar el SPF en un solo registro.
+En el paso de "DNS Records", usar **Auto configure** (no manual) — Resend ofrece una integración directa con Cloudflare que agrega los registros por una autorización de un solo uso ("This is a one-time authorization. It does not grant Resend permission to make future changes"). Minimiza el riesgo de error de transcripción en los registros DKIM/SPF (largos y fáciles de copiar mal a mano).
+
+Revisar que **"Enable Receiving" quede apagado** — este subdominio es solo para envío; la recepción real la maneja el buzón de Hostinger en la Task 9.
 
 - [ ] **Step 3: Confirmar la verificación**
 
-En Resend → Domains, esperar a que el estado del dominio cambie a "Verified" (puede tardar algunos minutos por propagación DNS).
+En Resend → Domains → `mail.clcolor.com`, esperar a que el estado cambie a **"Verified"** (en la práctica, unos minutos — mucho más rápido que la propagación externa de nameservers, porque el DNS ya vive en la misma cuenta de Cloudflare).
 
-- [ ] **Step 4: Actualizar la variable de entorno de producción**
+- [ ] **Step 4: Actualizar las variables de entorno de producción**
 
-En Cloudflare Pages → Settings → Environment variables → Production, cambiar `CONTACT_FROM_EMAIL` de `onboarding@resend.dev` a algo como `contacto@clcolor.com`. Volver a desplegar (Retry deployment o un nuevo push) para que la Function tome el nuevo valor.
+En Cloudflare Pages → Settings → Environment variables → Production:
+- `CONTACT_FROM_EMAIL`: cambiar de `onboarding@resend.dev` a `formulario@mail.clcolor.com`.
+- `CONTACT_TO_EMAIL`: cambiar al correo real del buzón, `contacto@clcolor.com` (ya no aplica la restricción de sandbox una vez verificado el dominio).
 
-- [ ] **Step 5: Verificar el envío con el remitente definitivo**
+Como ya se observó que **"Retry deployment" no siempre aplica cambios de variables/secrets** sobre un deployment existente, forzar un deployment nuevo real con un commit + push a `main` (puede ser cualquier cambio legítimo pendiente, no hace falta un commit vacío).
 
-Repetir la verificación de la Task 5 Step 5 (POST a `/api/contact` en producción) y confirmar que el correo recibido ahora muestra como remitente `contacto@clcolor.com` en vez de `onboarding@resend.dev`.
+- [ ] **Step 5: Verificar el envío con el remitente y destinatario definitivos**
+
+Repetir la verificación de la Task 5 Step 5 (POST a `/api/contact` en producción) y confirmar que el correo llega a `contacto@clcolor.com` mostrando `formulario@mail.clcolor.com` como remitente.
 
 ---
 
