@@ -27,7 +27,7 @@
 - Modify: `.gitignore`
 
 **Interfaces:**
-- Produces: script `npm test` (corre `node --test test/`), script `npm run dev` (corre `wrangler pages dev .`), ambos usados por las Tasks 2 y 3.
+- Produces: script `ppnpm test` (corre `node --test test/`), script `ppnpm run dev` (corre `wrangler pages dev .`), ambos usados por las Tasks 2 y 3. (Nota: este proyecto usa `pnpm`, no `npm`, por convención del entorno.)
 
 - [ ] **Step 1: Crear `package.json`**
 
@@ -46,8 +46,8 @@
 
 - [ ] **Step 2: Instalar wrangler como devDependency**
 
-Run: `npm install --save-dev wrangler`
-Expected: crea `node_modules/`, `package-lock.json`, y agrega `wrangler` a `devDependencies` en `package.json`.
+Run: `pnpm add -D wrangler`
+Expected: crea `node_modules/`, `pnpm-lock.yaml`, y agrega `wrangler` a `devDependencies` en `package.json`. Si pnpm reporta scripts de instalación bloqueados (`ERR_PNPM_IGNORED_BUILDS`) para `esbuild`/`sharp`/`workerd`, correr `pnpm approve-builds --all` — son dependencias legítimas de `wrangler`.
 
 - [ ] **Step 3: Actualizar `.gitignore`**
 
@@ -62,15 +62,17 @@ Agregar al final del archivo existente:
 
 - [ ] **Step 4: Verificar que wrangler quedó instalado**
 
-Run: `npx wrangler --version`
-Expected: imprime un número de versión (ej. `⛅️ wrangler 3.x.x` o `4.x.x`), sin errores.
+Run: `pnpm exec wrangler --version`
+Expected: imprime un número de versión (ej. `4.x.x`), sin errores.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add package.json package-lock.json .gitignore
+git add package.json pnpm-lock.yaml pnpm-workspace.yaml .gitignore
 git commit -m "chore: bootstrap Node tooling for local Cloudflare Pages dev"
 ```
+
+(`pnpm-workspace.yaml` aparece porque `pnpm approve-builds` registra ahí los paquetes con permiso para correr scripts de instalación — se versiona para que una instalación limpia en otra máquina no vuelva a bloquear esos scripts.)
 
 ---
 
@@ -143,7 +145,7 @@ test('payload nulo se rechaza sin lanzar', () => {
 
 - [ ] **Step 2: Ejecutar el test y confirmar que falla**
 
-Run: `npm test`
+Run: `pnpm test`
 Expected: FAIL — `Cannot find module '../functions/api/_validate.js'` (el archivo aún no existe).
 
 - [ ] **Step 3: Implementar `functions/api/_validate.js`**
@@ -182,7 +184,7 @@ export function validateContactPayload(payload) {
 
 - [ ] **Step 4: Ejecutar el test y confirmar que pasa**
 
-Run: `npm test`
+Run: `pnpm test`
 Expected: PASS — 5 tests, 0 fallos.
 
 - [ ] **Step 5: Commit**
@@ -291,7 +293,7 @@ function jsonResponse(body, status) {
 
 - [ ] **Step 5: Levantar el entorno local y verificar el endpoint manualmente**
 
-Run: `npm run dev`
+Run: `pnpm run dev`
 Expected: arranca un servidor local (por defecto `http://127.0.0.1:8788`) sirviendo el sitio estático y las Functions.
 
 En otra terminal, con el servidor corriendo:
@@ -464,14 +466,14 @@ En `style.css`, después de la regla `.contact-submit:not(:disabled):hover` (lí
 
 - [ ] **Step 5: Verificar manualmente en el navegador**
 
-Con `npm run dev` corriendo (Task 3), abrir `http://127.0.0.1:8788/index.html`, ir a la sección de contacto, llenar todos los campos y enviar.
+Con `pnpm run dev` corriendo (Task 3), abrir `http://127.0.0.1:8788/index.html`, ir a la sección de contacto, llenar todos los campos y enviar.
 Expected: el botón se deshabilita brevemente, aparece "Enviando...", luego "¡Mensaje enviado! Te contactaremos pronto." en color de acento, el formulario se limpia, y llega el correo a la bandeja configurada.
 
 Repetir dejando el campo de email con un valor inválido antes de completar el resto — Expected: al enviar aparece el mensaje de error en rojo y el formulario no se limpia.
 
 - [ ] **Step 6: Correr los tests unitarios para confirmar que no se rompió nada**
 
-Run: `npm test`
+Run: `pnpm test`
 Expected: PASS — los 5 tests de la Task 2 siguen pasando (no se tocó `_validate.js`).
 
 - [ ] **Step 7: Commit**
@@ -647,7 +649,7 @@ git rm "recursos/Galería de la sección/Video 3.gif"
 
 - [ ] **Step 3: Verificar que el sitio sigue funcionando igual**
 
-Con `npm run dev` corriendo, abrir la página de inicio y confirmar que la galería de videos se ve y reproduce igual que antes (el archivo eliminado no se usaba).
+Con `pnpm run dev` corriendo, abrir la página de inicio y confirmar que la galería de videos se ve y reproduce igual que antes (el archivo eliminado no se usaba).
 
 - [ ] **Step 4: Commit**
 
