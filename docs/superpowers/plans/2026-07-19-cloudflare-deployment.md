@@ -37,12 +37,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test",
     "dev": "wrangler pages dev ."
   },
   "devDependencies": {}
 }
 ```
+
+(Nota: `node --test test/` con la ruta explícita falla en Node 24.13.1 con
+un `MODULE_NOT_FOUND` espurio al intentar resolver `test/` como módulo CJS.
+`node --test` sin argumentos usa el auto-discovery nativo y sí encuentra
+`test/*.test.js` correctamente — por eso el script queda así.)
 
 - [ ] **Step 2: Instalar wrangler como devDependency**
 
