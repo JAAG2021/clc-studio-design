@@ -233,7 +233,9 @@ Copiar la plantilla y rellenar con la API key real:
 cp .dev.vars.example .dev.vars
 ```
 
-Editar `.dev.vars` y reemplazar `re_xxxxxxxxxxxx` por la API key real de Resend. `CONTACT_FROM_EMAIL` queda como `onboarding@resend.dev` (remitente de pruebas de Resend, válido sin verificar dominio propio) y `CONTACT_TO_EMAIL` como el correo donde quieres recibir los mensajes.
+Editar `.dev.vars` y reemplazar `re_xxxxxxxxxxxx` por la API key real de Resend. `CONTACT_FROM_EMAIL` queda como `onboarding@resend.dev` (remitente de pruebas de Resend, válido sin verificar dominio propio).
+
+**Importante sobre `CONTACT_TO_EMAIL` mientras se use el remitente de pruebas**: Resend solo permite enviar, desde `onboarding@resend.dev`, a la dirección de correo **con la que se creó la cuenta de Resend** — no a cualquier destinatario. Si `CONTACT_TO_EMAIL` apunta a otra dirección, la API de Resend responde `403 validation_error` (nuestra Function lo traduce a `502`). Por lo tanto, hasta que se complete la Task 8 (verificar `clcolor.com` en Resend), `CONTACT_TO_EMAIL` debe ser el correo con el que se registró la cuenta de Resend — tanto en `.dev.vars` local como en la variable de producción de Cloudflare Pages (Task 5 Step 3). Una vez verificado el dominio propio (Task 8), esta restricción desaparece y `CONTACT_TO_EMAIL` puede ser cualquier dirección real.
 
 - [ ] **Step 4: Implementar `functions/api/contact.js`**
 
@@ -300,6 +302,14 @@ function jsonResponse(body, status) {
 
 Run: `pnpm run dev`
 Expected: arranca un servidor local (por defecto `http://127.0.0.1:8788`) sirviendo el sitio estático y las Functions.
+
+**Si la máquina no tiene conectividad IPv6 funcional** (común en algunas redes/VPN), el `fetch()` de la Function hacia `api.resend.com` puede quedarse colgado indefinidamente sin error — `api.resend.com` resuelve a Cloudflare, que sí publica registros AAAA, y `workerd` (el runtime local de Cloudflare Pages) no hace fallback rápido a IPv4 si el intento por IPv6 no responde. Si el `curl` de verificación de más abajo se cuelga sin devolver nada (a diferencia de un error rápido), reinicia el servidor local así:
+
+```bash
+NODE_OPTIONS="--dns-result-order=ipv4first" pnpm run dev
+```
+
+Esto fuerza a Node a preferir direcciones IPv4 al resolver DNS, evitando el intento de conexión por IPv6 que se cuelga. Si el `fetch` colgado ya dejó un proceso `workerd` huérfano ocupando el puerto 8788 (visible con `Get-NetTCPConnection -LocalPort 8788` en PowerShell), termínalo con `Stop-Process -Id <PID> -Force` antes de reiniciar.
 
 En otra terminal, con el servidor corriendo:
 
@@ -510,7 +520,7 @@ En la pantalla de configuración del proyecto:
 En el mismo asistente (o después, en Settings → Environment variables → Production), agregar:
 - `RESEND_API_KEY` (marcar como **Encrypted**) — la misma API key de la Task 3.
 - `CONTACT_FROM_EMAIL` = `onboarding@resend.dev` (se actualizará en la Task 8 al verificar el dominio propio en Resend).
-- `CONTACT_TO_EMAIL` = `cleanlinecolorstudio@gmail.com`
+- `CONTACT_TO_EMAIL` = el correo con el que se creó la cuenta de Resend (ver la nota en la Task 3 Step 3 — mientras se use `onboarding@resend.dev`, Resend rechaza cualquier otro destinatario con `403`). Se actualiza a la dirección real (`contacto@clcolor.com`) en la Task 9 Step 7, una vez verificado el dominio en la Task 8.
 
 - [ ] **Step 4: Desplegar**
 
