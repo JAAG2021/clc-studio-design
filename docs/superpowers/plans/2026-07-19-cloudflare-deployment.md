@@ -692,6 +692,8 @@ curl -i -X POST https://clc-studio-design.pages.dev/api/contact \
 
 Expected: `200 OK` con `{"ok":true}` y correo recibido en `CONTACT_TO_EMAIL`.
 
+**Si da `502`**: verificar primero que las 3 variables de entorno (Settings → Environment variables → Production) tengan los valores correctos y sin typos — en particular que `RESEND_API_KEY` conserve el prefijo `re_` completo. Si se corrige un valor de variable/secret sobre un deployment ya existente, usar **"Retry deployment" no necesariamente aplica el valor corregido** (se observó que seguía usando el secret viejo). La forma confiable de que un valor corregido se aplique es generar un deployment nuevo de verdad (un nuevo commit + push a `main`), no reintentar el existente.
+
 No se hace commit en este task — es configuración de plataforma, no cambios en el repo.
 
 ---
