@@ -42,11 +42,7 @@ export async function onRequestPost(context) {
   });
 
   if (!resendResponse.ok) {
-    const debugBody = await resendResponse.text();
-    return jsonResponse(
-      { ok: false, error: 'No se pudo enviar el mensaje. Intenta de nuevo.', debugStatus: resendResponse.status, debugBody },
-      502
-    );
+    return jsonResponse({ ok: false, error: 'No se pudo enviar el mensaje. Intenta de nuevo.' }, 502);
   }
 
   return jsonResponse({ ok: true }, 200);
