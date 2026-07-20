@@ -71,9 +71,12 @@ Cloudflare Email Routing → contacto@<dominio> reenviado a Gmail existente
 - Verificado: el archivo más pesado en `recursos/` es un GIF de 15MB — muy
   por debajo del límite de Cloudflare Pages de 25 MiB por archivo. No hay
   bloqueo técnico para subir el contenido actual tal cual.
-- Mejora recomendada (no bloqueante): convertir
-  `recursos/Galería de la sección/Video 3.gif` (15MB) a `.mp4`/`.webm` como
-  los demás videos de la carpeta, por peso y tiempo de carga.
+- Corrección tras revisar las referencias en el código (durante la
+  elaboración del plan de implementación): `recursos/Galería de la
+  sección/Video 3.gif` (15MB) no está enlazado desde ningún HTML/JS/CSS del
+  proyecto — es un archivo huérfano; la galería ya usa `Video-3.mp4`
+  (860KB). La mejora recomendada (no bloqueante) es eliminarlo, no
+  convertirlo.
 
 ### 4. Formulario de contacto — Cloudflare Functions + Resend
 
