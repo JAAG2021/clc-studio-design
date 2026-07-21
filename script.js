@@ -513,3 +513,48 @@ function getLocalMouse(canvas) {
   draw();
   window.addEventListener('resize', resize);
 })();
+
+/* ─── Mobile Nav (hamburger) ─────────────────── */
+(function initMobileNav() {
+  const navbar = document.getElementById('navbar');
+  if (!navbar) return;
+  const right = navbar.querySelector('.right');
+  if (!right) return;
+
+  const toggle = document.createElement('button');
+  toggle.className = 'nav-toggle';
+  toggle.type = 'button';
+  toggle.setAttribute('aria-label', 'Abrir menú');
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.setAttribute('aria-controls', 'navbar');
+  toggle.innerHTML = '<span></span><span></span><span></span>';
+  navbar.appendChild(toggle);
+
+  const setOpen = (open) => {
+    navbar.classList.toggle('menu-open', open);
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    toggle.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+  };
+
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setOpen(!navbar.classList.contains('menu-open'));
+  });
+
+  // Cerrar al hacer clic en un enlace del menú
+  right.querySelectorAll('a').forEach((a) => {
+    a.addEventListener('click', () => setOpen(false));
+  });
+
+  // Cerrar al hacer clic fuera del navbar
+  document.addEventListener('click', (e) => {
+    if (navbar.classList.contains('menu-open') && !navbar.contains(e.target)) {
+      setOpen(false);
+    }
+  });
+
+  // Cerrar con Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setOpen(false);
+  });
+})();
