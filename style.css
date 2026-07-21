@@ -1516,6 +1516,16 @@ div .label {
     opacity: 1;
     pointer-events: auto;
   }
+
+  /* Prevent sticky :hover scaling from overflowing service cards on touch */
+  .service-wrapper:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .service-wrapper:hover .service img {
+    transform: none;
+  }
 }
 
 /* --- Footer --- */
@@ -1844,6 +1854,45 @@ div .label {
   .footer-legal {
     text-align: left;
   }
+
+  /* Services: stack each card into a single column below tablet */
+  .service-section {
+    padding: 48px 24px;
+  }
+
+  .service-section .label {
+    font-size: 38px;
+    line-height: 1.06;
+    margin-bottom: 48px;
+  }
+
+  .service-wrapper {
+    padding: 28px;
+  }
+
+  .service {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .service h2,
+  .service img,
+  .service p {
+    width: 100%;
+  }
+
+  .service h2 {
+    font-size: 40px;
+  }
+
+  .service img {
+    height: 260px;
+  }
+
+  .service p {
+    font-size: 18px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1924,6 +1973,27 @@ div .label {
   .about-team-photo {
     border-radius: 18px;
   }
+
+  .service-section {
+    padding: 44px 18px;
+  }
+
+  .service-section .label {
+    font-size: 32px;
+    margin-bottom: 40px;
+  }
+
+  .service-wrapper {
+    padding: 22px;
+  }
+
+  .service h2 {
+    font-size: 32px;
+  }
+
+  .service img {
+    height: 220px;
+  }
 }
 
 @media (max-width: 540px) {
@@ -2001,6 +2071,39 @@ div .label {
 
   .about-team-photo {
     border-radius: 12px;
+  }
+
+  .service-section {
+    border-radius: 28px;
+    padding: 38px 14px;
+  }
+
+  .service-section .label {
+    font-size: 27px;
+    line-height: 1.1;
+    margin-bottom: 32px;
+  }
+
+  .service-wrapper {
+    border-radius: 28px;
+    padding: 20px;
+  }
+
+  .service {
+    gap: 14px;
+  }
+
+  .service h2 {
+    font-size: 26px;
+  }
+
+  .service img {
+    height: 190px;
+  }
+
+  .service p {
+    font-size: 16px;
+    line-height: 1.4;
   }
 }
 
