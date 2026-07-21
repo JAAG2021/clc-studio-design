@@ -1788,7 +1788,8 @@ div .label {
   }
 
   .contact-form-section {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
     gap: 42px;
     padding: 58px 32px;
   }
@@ -2497,5 +2498,40 @@ div .label {
   .navbar .right {
     left: 8px;
     right: 8px;
+  }
+}
+
+/* =============================================================
+   CLC – Formulario de contacto: centrado correcto en móvil.
+   Evita el desborde por CSS Grid (1fr = minmax(auto,1fr)) que
+   descentraba la sección.
+   ============================================================= */
+@media (max-width: 1024px) {
+  .contact-form-copy,
+  .contact-form {
+    min-width: 0;
+    width: 100%;
+    max-width: 520px;
+  }
+
+  .contact-form-copy {
+    align-items: center;
+  }
+
+  .contact-form-copy p {
+    text-align: center;
+    overflow-wrap: break-word;
+  }
+}
+
+@media (max-width: 480px) {
+  .contact-form-copy p {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 360px) {
+  .contact-form-copy p {
+    font-size: 20px;
   }
 }
