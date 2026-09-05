@@ -1,0 +1,39 @@
+# Cabeceras que Cloudflare Pages aplica a las respuestas.
+# Sintaxis: una ruta, y debajo las cabeceras indentadas.
+
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=()
+  Cross-Origin-Opener-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self'; connect-src 'self' https://cloudflareinsights.com; upgrade-insecure-requests
+
+# Imagenes, video y la libreria de telefonos: nombres estables, cambian poco.
+/recursos/*
+  Cache-Control: public, max-age=2592000
+
+/vendor/*
+  Cache-Control: public, max-age=2592000
+
+# style.css y script.js llevan ?v= en cada pagina; al publicar un cambio hay
+# que subir esa version o los visitantes seguiran con la copia antigua.
+/style.css
+  Cache-Control: public, max-age=604800
+
+/script.js
+  Cache-Control: public, max-age=604800
+
+/favicon.ico
+  Cache-Control: public, max-age=604800
+
+/favicon.svg
+  Cache-Control: public, max-age=604800
+
+/apple-touch-icon.png
+  Cache-Control: public, max-age=604800
+
+# El endpoint del formulario nunca debe cachearse.
+/api/*
+  Cache-Control: no-store

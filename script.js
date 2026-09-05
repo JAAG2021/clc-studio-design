@@ -7,15 +7,50 @@ let mouseX = 0, mouseY = 0;
 document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
 
 /* ─── 1. Loading Screen ─────────────────────── */
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    const loader = document.getElementById('loading');
-    if (loader) {
-      loader.classList.add('hide');
-      setTimeout(initHeroAnimations, 350);
+/* La secuencia arranca con el HTML, no con el evento `load`: esperar a que
+   terminaran de descargar los 28 MB de imagen y vídeo dejaba al visitante en
+   móvil mirando una pantalla vacía durante decenas de segundos, y solo
+   entonces empezaban a contar los 4 s de animación. Ahora dura menos de 2 s
+   (--loader-duration en style.css) y solo se muestra una vez por sesión: al
+   navegar entre páginas ya no estorba. Un temporizador de respaldo garantiza
+   que la pantalla nunca se quede pegada. */
+(function initLoadingScreen() {
+  const loader = document.getElementById('loading');
+  if (!loader) return;
+
+  const SEEN_KEY = 'clc:loader-visto';
+  let alreadySeen = false;
+  try {
+    alreadySeen = sessionStorage.getItem(SEEN_KEY) === '1';
+  } catch (err) {
+    alreadySeen = false; // navegación privada o almacenamiento bloqueado
+  }
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const skipAnimation = alreadySeen || reduceMotion;
+  let dismissed = false;
+
+  function dismiss() {
+    if (dismissed) return;
+    dismissed = true;
+    loader.classList.add('hide');
+    setTimeout(initHeroAnimations, reduceMotion ? 0 : 350);
+    try {
+      sessionStorage.setItem(SEEN_KEY, '1');
+    } catch (err) {
+      // Sin sessionStorage el loader se repite en cada página: molesto, no roto.
     }
-  }, 4000);
-});
+  }
+
+  if (skipAnimation) {
+    loader.style.display = 'none';
+    dismiss();
+    return;
+  }
+
+  setTimeout(dismiss, 1800);
+  setTimeout(dismiss, 3000); // red de respaldo
+})();
 
 /* ─── 2. Custom Cursor (lerp) ───────────────── */
 const cursorEl   = document.getElementById('cursor');
@@ -104,6 +139,54 @@ const revealObserver = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
 document.querySelectorAll('[data-reveal]').forEach(el => revealObserver.observe(el));
+
+/* ─── Carga diferida de vídeo ──────────── */
+/* Los <video> llevan data-src en vez de src, y un poster WebP de unos pocos
+   KB. Así la página no descarga casi un mega de vídeo antes de que el
+   visitante llegue siquiera a esa sección. Se enganchan cuando faltan 300 px
+   para entrar en pantalla. */
+(function initLazyVideos() {
+  const videos = Array.from(document.querySelectorAll('video')).filter(
+    (video) => video.dataset.src || video.querySelector('source[data-src]')
+  );
+  if (videos.length === 0) return;
+
+  function attach(video) {
+    const source = video.querySelector('source[data-src]');
+    if (source) {
+      source.src = source.dataset.src;
+      source.removeAttribute('data-src');
+    } else if (video.dataset.src) {
+      video.src = video.dataset.src;
+      video.removeAttribute('data-src');
+    } else {
+      return;
+    }
+    video.load();
+    const started = video.play();
+    if (started) {
+      started.catch(() => {
+        /* Si el navegador bloquea la reproducción automática se queda el
+           póster visible, que es justo el comportamiento deseado. */
+      });
+    }
+  }
+
+  if (!('IntersectionObserver' in window)) {
+    videos.forEach(attach);
+    return;
+  }
+
+  const videoObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      videoObserver.unobserve(entry.target);
+      attach(entry.target);
+    });
+  }, { rootMargin: '300px' });
+
+  videos.forEach((video) => videoObserver.observe(video));
+})();
 
 /* ─── 7. Parallax on About Video ─────────────── */
 const thinkingVideo   = document.querySelector('.thinking-video');
@@ -221,13 +304,16 @@ function getLocalMouse(canvas) {
   const form = document.querySelector('.contact-form');
   if (!form) return;
 
-  const fields = Array.from(form.querySelectorAll('input, textarea'));
   const submitButton = form.querySelector('.contact-submit');
   const statusEl = document.getElementById('contact-status');
+  const nameField = form.querySelector('#contact-name');
+  const companyField = form.querySelector('#contact-company');
   const emailField = form.querySelector('#contact-email');
+  const messageField = form.querySelector('#contact-message');
   const phoneField = form.querySelector('#contact-phone');
   const phoneCountrySelect = form.querySelector('#contact-phone-country');
-  if (!submitButton || fields.length === 0) return;
+  const honeypot = form.querySelector('#contact-website');
+  if (!submitButton || !nameField || !emailField || !messageField) return;
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const hasPhoneLib = Boolean(window.libphonenumber && phoneCountrySelect);
@@ -249,25 +335,37 @@ function getLocalMouse(canvas) {
     phoneCountrySelect.value = countries.some((country) => country.code === 'SV') ? 'SV' : countries[0]?.code || '';
   }
 
-  const isFormComplete = () => fields.every((field) => field.value.trim().length > 0);
-  const isEmailValid = () => !emailField || EMAIL_RE.test(emailField.value.trim());
-  const isPhoneValid = () => {
-    if (!phoneField) return true;
-    if (!hasPhoneLib) return true;
-    return libphonenumber.isValidPhoneNumber(phoneField.value.trim(), phoneCountrySelect.value);
-  };
+  const value = (field) => (field ? field.value.trim() : '');
 
-  function formattedPhone() {
-    if (!phoneField) return '';
-    if (!hasPhoneLib) return phoneField.value.trim();
-    const parsed = libphonenumber.parsePhoneNumberFromString(phoneField.value.trim(), phoneCountrySelect.value);
-    return parsed ? parsed.formatInternational() : phoneField.value.trim();
+  /* Obligatorios: nombre, email y mensaje — el mismo contrato que valida el
+     servidor en functions/api/_validate.js. Empresa y teléfono son opcionales,
+     y el teléfono solo se valida cuando trae contenido. */
+  function firstProblem() {
+    if (value(nameField) === '') {
+      return { field: nameField, message: 'Escribe tu nombre y apellido.' };
+    }
+    if (value(emailField) === '') {
+      return { field: emailField, message: 'Escribe tu correo para poder responderte.' };
+    }
+    if (!EMAIL_RE.test(value(emailField))) {
+      return { field: emailField, message: 'Ese correo no parece válido. Revisa que incluya @ y un dominio.' };
+    }
+    if (value(messageField) === '') {
+      return { field: messageField, message: 'Cuéntanos brevemente en qué podemos ayudarte.' };
+    }
+    if (value(phoneField) !== '' && hasPhoneLib &&
+        !libphonenumber.isValidPhoneNumber(value(phoneField), phoneCountrySelect.value)) {
+      const country = phoneCountrySelect.selectedOptions[0]?.textContent || 'el país seleccionado';
+      return { field: phoneField, message: `Ese número no es válido para ${country}. También puedes dejarlo vacío.` };
+    }
+    return null;
   }
 
-  function updateSubmitState() {
-    const complete = isFormComplete() && isEmailValid() && isPhoneValid();
-    submitButton.disabled = !complete;
-    submitButton.setAttribute('aria-disabled', String(!complete));
+  function formattedPhone() {
+    const raw = value(phoneField);
+    if (raw === '' || !hasPhoneLib) return raw;
+    const parsed = libphonenumber.parsePhoneNumberFromString(raw, phoneCountrySelect.value);
+    return parsed ? parsed.formatInternational() : raw;
   }
 
   function setStatus(message, isError) {
@@ -276,48 +374,59 @@ function getLocalMouse(canvas) {
     statusEl.classList.toggle('contact-status--error', Boolean(isError));
   }
 
+  function clearFieldErrors() {
+    form.querySelectorAll('[aria-invalid="true"]').forEach((el) => el.removeAttribute('aria-invalid'));
+  }
+
+  function setSending(sending) {
+    submitButton.disabled = sending;
+    submitButton.setAttribute('aria-disabled', String(sending));
+    submitButton.textContent = sending ? 'Enviando...' : 'Enviar';
+  }
+
   let latestRequestId = 0;
 
-  fields.forEach((field) => {
-    field.addEventListener('input', updateSubmitState);
-    field.addEventListener('change', updateSubmitState);
+  /* El botón nunca queda deshabilitado en reposo: el usuario siempre puede
+     intentar enviar y recibir una explicación concreta de lo que falta. */
+  form.addEventListener('input', (event) => {
+    event.target.removeAttribute?.('aria-invalid');
   });
-
-  phoneCountrySelect?.addEventListener('change', updateSubmitState);
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
-    updateSubmitState();
 
-    if (!isFormComplete()) {
-      const firstEmptyField = fields.find((field) => field.value.trim().length === 0);
-      firstEmptyField?.focus();
+    /* Honeypot: un bot rellena todos los campos del formulario, incluido este,
+       que ninguna persona ve. Respondemos como si hubiera funcionado. */
+    if (honeypot && honeypot.value !== '') {
+      setStatus('¡Mensaje enviado! Te contactaremos pronto.', false);
+      form.reset();
       return;
     }
 
-    if (!isEmailValid()) {
-      setStatus('Formato de email inválido.', true);
-      emailField?.focus();
+    const problem = firstProblem();
+    if (problem) {
+      clearFieldErrors();
+      problem.field?.setAttribute('aria-invalid', 'true');
+      setStatus(problem.message, true);
+      problem.field?.focus();
       return;
     }
 
-    if (!isPhoneValid()) {
-      setStatus('Formato de teléfono inválido para el país seleccionado.', true);
-      phoneField?.focus();
-      return;
-    }
+    clearFieldErrors();
 
     const payload = {
-      nombre_apellido: form.querySelector('#contact-name').value.trim(),
-      empresa: form.querySelector('#contact-company').value.trim(),
+      nombre_apellido: value(nameField),
+      empresa: value(companyField),
       telefono: formattedPhone(),
-      email: form.querySelector('#contact-email').value.trim(),
-      mensaje: form.querySelector('#contact-message').value.trim()
+      email: value(emailField),
+      mensaje: value(messageField),
+      /* El servidor vuelve a comprobar la trampa: un bot que publique
+         directamente contra /api/contact se salta la comprobación de arriba. */
+      website: honeypot ? honeypot.value : ''
     };
 
     const requestId = ++latestRequestId;
-
-    submitButton.disabled = true;
+    setSending(true);
     setStatus('Enviando...', false);
 
     fetch('/api/contact', {
@@ -325,28 +434,38 @@ function getLocalMouse(canvas) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-      .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+      .then(async (response) => {
+        /* Una respuesta que no sea JSON (un 5xx en HTML, por ejemplo) no debe
+           romper el manejador: se trata como un fallo con mensaje genérico. */
+        let data = null;
+        try {
+          data = await response.json();
+        } catch (err) {
+          data = null;
+        }
+        return { ok: response.ok, data };
+      })
       .then(({ ok, data }) => {
         if (requestId !== latestRequestId) return;
-        if (!ok || !data.ok) {
-          throw new Error(data?.error || 'No se pudo enviar el mensaje.');
+        if (!ok || !data || !data.ok) {
+          throw new Error((data && data.error) || 'No se pudo enviar el mensaje.');
         }
         setStatus('¡Mensaje enviado! Te contactaremos pronto.', false);
         form.reset();
       })
       .catch((error) => {
         if (requestId !== latestRequestId) return;
-        setStatus(error.message, true);
+        setStatus(`${error.message} También puedes escribirnos por WhatsApp al +503 7159 6976.`, true);
       })
       .finally(() => {
         if (requestId !== latestRequestId) return;
-        updateSubmitState();
+        setSending(false);
       });
   });
 
-  window.addEventListener('pageshow', updateSubmitState);
-  setTimeout(updateSubmitState, 100);
-  updateSubmitState();
+  /* Al volver con el botón "atrás" el navegador restaura la página desde caché:
+     si quedó a media petición, el botón debe volver a estar utilizable. */
+  window.addEventListener('pageshow', () => setSending(false));
 })();
 
 /* Project detail content */
@@ -361,64 +480,66 @@ function getLocalMouse(canvas) {
     'oceanside-el-salvador': {
       client: 'Oceanside El Salvador',
       type: 'Diseño Web & Redes Sociales',
-      image: 'recursos/Proyectos/proyecto_01.png'
+      image: '/recursos/Proyectos/proyecto_01.webp'
     },
     'carmen-galindo-atelier': {
       client: 'Carmen Galindo Atelier',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_02.png'
+      image: '/recursos/Proyectos/proyecto_02.webp'
     },
     'surf-city': {
       client: 'Surf City',
       type: 'Redes Sociales',
-      image: 'recursos/Proyectos/proyecto_03.png'
+      image: '/recursos/Proyectos/proyecto_03.webp'
     },
     'grupo-proint': {
       client: 'Grupo Proint',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_04.png'
+      image: '/recursos/Proyectos/proyecto_04.webp'
     },
     'del-horno': {
       client: 'Del Horno',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_05.png'
+      image: '/recursos/Proyectos/proyecto_05.webp'
     },
     'bibimbap': {
       client: 'Bibimbap',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_06.png',
+      image: '/recursos/Proyectos/proyecto_06.webp',
       gallery: [
-        'recursos/Proyectos/Bibimbap/01.jpg',
-        'recursos/Proyectos/Bibimbap/02.jpg',
-        'recursos/Proyectos/Bibimbap/03.jpg',
-        'recursos/Proyectos/Bibimbap/04.jpg',
-        'recursos/Proyectos/Bibimbap/05.jpg',
-        'recursos/Proyectos/Bibimbap/06.jpg',
-        'recursos/Proyectos/Bibimbap/07.jpg',
-        'recursos/Proyectos/Bibimbap/08.jpg',
-        'recursos/Proyectos/Bibimbap/09.jpg',
-        'recursos/Proyectos/Bibimbap/10.jpg'
+        '/recursos/Proyectos/Bibimbap/01.webp',
+        '/recursos/Proyectos/Bibimbap/02.webp',
+        '/recursos/Proyectos/Bibimbap/03.webp',
+        '/recursos/Proyectos/Bibimbap/04.webp',
+        '/recursos/Proyectos/Bibimbap/05.webp',
+        '/recursos/Proyectos/Bibimbap/06.webp',
+        '/recursos/Proyectos/Bibimbap/07.webp',
+        '/recursos/Proyectos/Bibimbap/08.webp',
+        '/recursos/Proyectos/Bibimbap/09.webp',
+        '/recursos/Proyectos/Bibimbap/10.webp'
       ]
     },
     'calambre': {
       client: 'Calambre',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_07.png'
+      image: '/recursos/Proyectos/proyecto_07.webp'
     },
     'daruma-iced-tea': {
       client: 'Daruma Iced Tea',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_08.png'
+      image: '/recursos/Proyectos/proyecto_08.webp'
     },
     'sapphire-martini': {
       client: 'Sapphire Martini',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_09.png'
+      image: '/recursos/Proyectos/proyecto_09.webp'
     }
   };
 
-  const slug = new URLSearchParams(window.location.search).get('proyecto') || 'oceanside-el-salvador';
-  const project = projects[slug] || projects['oceanside-el-salvador'];
+  const requestedSlug = new URLSearchParams(window.location.search).get('proyecto');
+  const knownSlug = requestedSlug && projects[requestedSlug] ? requestedSlug : null;
+  const slug = knownSlug || 'oceanside-el-salvador';
+  const project = projects[slug];
 
   titleEl.textContent = project.client;
   typeEl.textContent = project.type;
@@ -437,7 +558,40 @@ function getLocalMouse(canvas) {
     imageEl.alt = `${project.client} - ${project.type}`;
   }
 
+  /* Las nueve fichas de proyecto viven en esta misma página con distinto
+     ?proyecto=. Sin actualizar los metadatos, las nueve URLs del sitemap
+     compartían título, descripción y canonical: Google las veía como
+     contenido duplicado. */
+  const SITE = 'https://clcolor.com';
+  const canonical = `${SITE}/proyecto?proyecto=${encodeURIComponent(slug)}`;
+  const description =
+    `${project.client}: proyecto de ${project.type.toLowerCase()} realizado por CleanLineColor Studio.`;
+  const image = `${SITE}${project.gallery ? project.gallery[0] : project.image}`;
+
+  function setMeta(selector, attribute, content) {
+    const el = document.head.querySelector(selector);
+    if (el) el.setAttribute(attribute, content);
+  }
+
   document.title = `${project.client} | CleanLineColor Studio`;
+  setMeta('meta[name="description"]', 'content', description);
+  setMeta('link[rel="canonical"]', 'href', canonical);
+  setMeta('meta[property="og:url"]', 'content', canonical);
+  setMeta('meta[property="og:title"]', 'content', document.title);
+  setMeta('meta[property="og:description"]', 'content', description);
+  setMeta('meta[property="og:image"]', 'content', image);
+  setMeta('meta[name="twitter:title"]', 'content', document.title);
+  setMeta('meta[name="twitter:description"]', 'content', description);
+  setMeta('meta[name="twitter:image"]', 'content', image);
+
+  /* Un ?proyecto= que no existe muestra el proyecto por defecto, pero esa URL
+     no debe indexarse: sería otra copia del mismo contenido. */
+  if (requestedSlug && !knownSlug) {
+    const robots = document.createElement('meta');
+    robots.name = 'robots';
+    robots.content = 'noindex, follow';
+    document.head.appendChild(robots);
+  }
 })();
 
 /* ─── CANVAS 2: Organic Blob (About) ────────── */

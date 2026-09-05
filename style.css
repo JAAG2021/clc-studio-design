@@ -1,3 +1,12 @@
+:root {
+  /* Duración de la coreografía del loader. Antes eran 4s que ni siquiera
+     empezaban a contar hasta que terminaba de cargar todo el sitio (28 MB de
+     imagen y video): el visitante en móvil veía una pantalla vacía durante
+     decenas de segundos. Ahora la secuencia arranca con el HTML y dura menos
+     de 2s, dentro del umbral de LCP que mide Google. */
+  --loader-duration: 1.8s;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -67,7 +76,7 @@ div .label {
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  animation: loaderSceneTint 4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: loaderSceneTint var(--loader-duration, 1.8s) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .loading.hide {
@@ -90,7 +99,7 @@ div .label {
   height: auto;
   overflow: visible;
   transform-style: preserve-3d;
-  animation: loaderRealMarkExit 4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: loaderRealMarkExit var(--loader-duration, 1.8s) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .loader-logo-piece {
@@ -103,23 +112,23 @@ div .label {
 }
 
 .loader-c-left {
-  animation: loaderRealCLeft 4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: loaderRealCLeft var(--loader-duration, 1.8s) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .loader-dot-left {
-  animation: loaderRealDotLeft 4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: loaderRealDotLeft var(--loader-duration, 1.8s) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .loader-l-center {
-  animation: loaderRealL 4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: loaderRealL var(--loader-duration, 1.8s) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .loader-c-right {
-  animation: loaderRealCRight 4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: loaderRealCRight var(--loader-duration, 1.8s) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .loader-dot-right {
-  animation: loaderRealDotRight 4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: loaderRealDotRight var(--loader-duration, 1.8s) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .loading-logo {
@@ -129,7 +138,7 @@ div .label {
   opacity: 0;
   transform: translateY(18px) scale(0.94);
   filter: drop-shadow(0 14px 28px rgba(77, 86, 203, 0.18));
-  animation: loaderRealLogoReveal 4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: loaderRealLogoReveal var(--loader-duration, 1.8s) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes loaderSceneTint {
@@ -907,6 +916,42 @@ div .label {
   color: #c0392b;
 }
 
+/* Marca visible del campo que el usuario debe corregir. El mensaje concreto
+   lo escribe script.js en #contact-status, que es aria-live. */
+.contact-field input[aria-invalid="true"],
+.contact-field textarea[aria-invalid="true"],
+.contact-phone-group input[aria-invalid="true"] {
+  border-color: #c0392b;
+  box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.14);
+}
+
+.contact-optional {
+  font-weight: 400;
+  opacity: 0.62;
+}
+
+/* Trampa anti-spam: fuera de la pantalla, no oculta con display:none, que
+   muchos bots detectan y saltan. */
+.contact-honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.contact-submit {
+  cursor: pointer;
+}
+
+.contact-submit:focus-visible,
+.contact-field input:focus-visible,
+.contact-field textarea:focus-visible,
+.contact-phone-group select:focus-visible {
+  outline: 2px solid #4d5ac4;
+  outline-offset: 2px;
+}
+
 /* --- Service Section --- */
 .service-section {
   position: relative;
@@ -1225,6 +1270,54 @@ div .label {
 
 .legal-page + .site-footer {
   margin-top: 0;
+}
+
+/* --- Página 404 (reutiliza el contenedor de las páginas legales) --- */
+.error-content {
+  min-height: 560px;
+}
+
+.error-code {
+  display: inline-block;
+  margin-bottom: 18px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: rgba(77, 86, 203, 0.1);
+  color: #4d56cb;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.error-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 34px 0 40px;
+}
+
+.error-links a {
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #111;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.error-links a:hover {
+  background: #4d56cb;
+  border-color: #4d56cb;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.error-links a:focus-visible {
+  outline: 2px solid #4d56cb;
+  outline-offset: 3px;
 }
 
 /* --- Projects Page --- */

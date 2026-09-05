@@ -2,58 +2,86 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://clcolor.com/</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://clcolor.com/proyectos.html</loc>
+    <loc>https://clcolor.com/proyectos</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://clcolor.com/proyecto.html?proyecto=oceanside-el-salvador</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://clcolor.com/proyecto.html?proyecto=carmen-galindo-atelier</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://clcolor.com/proyecto.html?proyecto=surf-city</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://clcolor.com/proyecto.html?proyecto=grupo-proint</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://clcolor.com/proyecto.html?proyecto=bibimbap</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://clcolor.com/proyecto.html?proyecto=calambre</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://clcolor.com/proyecto.html?proyecto=daruma-iced-tea</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://clcolor.com/proyecto.html?proyecto=del-horno</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://clcolor.com/proyecto.html?proyecto=sapphire-martini</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://clcolor.com/noticias.html</loc>
+    <loc>https://clcolor.com/noticias</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://clcolor.com/politica-de-privacidad.html</loc>
+    <loc>https://clcolor.com/proyecto?proyecto=oceanside-el-salvador</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://clcolor.com/proyecto?proyecto=carmen-galindo-atelier</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://clcolor.com/proyecto?proyecto=surf-city</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://clcolor.com/proyecto?proyecto=grupo-proint</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://clcolor.com/proyecto?proyecto=del-horno</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://clcolor.com/proyecto?proyecto=bibimbap</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://clcolor.com/proyecto?proyecto=calambre</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://clcolor.com/proyecto?proyecto=daruma-iced-tea</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://clcolor.com/proyecto?proyecto=sapphire-martini</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://clcolor.com/politica-de-privacidad</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
   <url>
-    <loc>https://clcolor.com/terminos-y-condiciones.html</loc>
+    <loc>https://clcolor.com/terminos-y-condiciones</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
 </urlset>

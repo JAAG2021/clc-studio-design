@@ -1,3 +1,22 @@
+# Obligatorias. Estos mismos nombres hay que definirlos en
+# Cloudflare Pages -> Settings -> Environment variables (Production).
 RESEND_API_KEY=re_xxxxxxxxxxxx
-CONTACT_FROM_EMAIL=onboarding@resend.dev
-CONTACT_TO_EMAIL=cleanlinecolorstudio@gmail.com
+
+# Remitente. Tiene que ser una direccion del dominio verificado en Resend
+# (mail.clcolor.com). No es un buzon real: nadie lee lo que llegue ahi, por eso
+# la Function pone el correo del visitante en reply_to.
+CONTACT_FROM_EMAIL=CleanLineColor Studio <formulario@mail.clcolor.com>
+
+# Destinatario: el buzon del cliente en Hostinger. Es el que la empresa revisa.
+# OJO: durante meses esto apunto a una direccion personal y al correo de
+# pruebas de Resend, y por eso los formularios no llegaban a CLC.
+CONTACT_TO_EMAIL=contacto@clcolor.com
+
+# Opcional. Si se define, /api/contact exige y verifica un token de
+# Cloudflare Turnstile. Sin ella el endpoint sigue protegido por el campo
+# trampa y el limite por IP.
+# TURNSTILE_SECRET_KEY=0x4xxxxxxxxxxxxxxxxxxxxxxxx
+
+# Binding de KV (se crea en el panel de Pages, no aqui): un namespace llamado
+# CONTACTOS. Si existe, cada envio se guarda antes de llamar a Resend y se
+# aplica un limite de 5 envios por IP cada 10 minutos.
