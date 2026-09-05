@@ -7,15 +7,50 @@ let mouseX = 0, mouseY = 0;
 document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
 
 /* ─── 1. Loading Screen ─────────────────────── */
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    const loader = document.getElementById('loading');
-    if (loader) {
-      loader.classList.add('hide');
-      setTimeout(initHeroAnimations, 350);
+/* La secuencia arranca con el HTML, no con el evento `load`: esperar a que
+   terminaran de descargar los 28 MB de imagen y vídeo dejaba al visitante en
+   móvil mirando una pantalla vacía durante decenas de segundos, y solo
+   entonces empezaban a contar los 4 s de animación. Ahora dura menos de 2 s
+   (--loader-duration en style.css) y solo se muestra una vez por sesión: al
+   navegar entre páginas ya no estorba. Un temporizador de respaldo garantiza
+   que la pantalla nunca se quede pegada. */
+(function initLoadingScreen() {
+  const loader = document.getElementById('loading');
+  if (!loader) return;
+
+  const SEEN_KEY = 'clc:loader-visto';
+  let alreadySeen = false;
+  try {
+    alreadySeen = sessionStorage.getItem(SEEN_KEY) === '1';
+  } catch (err) {
+    alreadySeen = false; // navegación privada o almacenamiento bloqueado
+  }
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const skipAnimation = alreadySeen || reduceMotion;
+  let dismissed = false;
+
+  function dismiss() {
+    if (dismissed) return;
+    dismissed = true;
+    loader.classList.add('hide');
+    setTimeout(initHeroAnimations, reduceMotion ? 0 : 350);
+    try {
+      sessionStorage.setItem(SEEN_KEY, '1');
+    } catch (err) {
+      // Sin sessionStorage el loader se repite en cada página: molesto, no roto.
     }
-  }, 4000);
-});
+  }
+
+  if (skipAnimation) {
+    loader.style.display = 'none';
+    dismiss();
+    return;
+  }
+
+  setTimeout(dismiss, 1800);
+  setTimeout(dismiss, 3000); // red de respaldo
+})();
 
 /* ─── 2. Custom Cursor (lerp) ───────────────── */
 const cursorEl   = document.getElementById('cursor');
