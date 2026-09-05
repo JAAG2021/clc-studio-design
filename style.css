@@ -1909,19 +1909,40 @@ div .label {
     border-radius: 16px;
   }
 
+  /* El boton "Hablemos" estaba centrado en absoluto sobre el carrusel
+     (pensado para escritorio, con 3 tarjetas grandes y huecos amplios
+     entre ellas). Reducir su tamano no alcanzaba: en cualquier ancho de
+     movil, con menos "hueco" disponible, siempre terminaba encima de
+     alguna tarjeta. Se saca del carrusel y pasa a vivir debajo, como
+     elemento propio en el flujo normal -- ya no compite visualmente
+     con las imagenes que se deslizan. */
+  .wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .inner-slider {
+    align-self: stretch;
+  }
+
   .slider-contact-btn {
+    position: static;
+    transform: none;
+    animation: none;
     padding: 8px;
     gap: 8px;
   }
 
   .slider-contact-btn a {
-    font-size: 28px;
-    padding: 0 20px;
+    font-size: 26px;
+    padding: 0 18px;
   }
 
   .slider-contact-btn .face {
-    width: 60px;
-    height: 60px;
+    width: 56px;
+    height: 56px;
   }
 
   .contact-form-section {
@@ -2073,20 +2094,6 @@ div .label {
     border-radius: 13px;
   }
 
-  .slider-contact-btn {
-    padding: 7px;
-    gap: 7px;
-  }
-
-  .slider-contact-btn a {
-    font-size: 22px;
-    padding: 0 16px;
-  }
-
-  .slider-contact-btn .face {
-    width: 50px;
-    height: 50px;
-  }
 
   .contact-form-section {
     padding: 48px 24px;
@@ -2206,20 +2213,6 @@ div .label {
     border-radius: 11px;
   }
 
-  .slider-contact-btn {
-    padding: 6px;
-    gap: 6px;
-  }
-
-  .slider-contact-btn a {
-    font-size: 17px;
-    padding: 0 12px;
-  }
-
-  .slider-contact-btn .face {
-    width: 40px;
-    height: 40px;
-  }
 
   .contact-form-section {
     border-radius: 28px;
@@ -2347,20 +2340,6 @@ div .label {
     border-radius: 9px;
   }
 
-  .slider-contact-btn {
-    padding: 5px;
-    gap: 5px;
-  }
-
-  .slider-contact-btn a {
-    font-size: 14px;
-    padding: 0 9px;
-  }
-
-  .slider-contact-btn .face {
-    width: 34px;
-    height: 34px;
-  }
 
   .contact-form-copy p {
     font-size: 24px;
@@ -2434,20 +2413,6 @@ div .label {
     border-radius: 8px;
   }
 
-  .slider-contact-btn {
-    padding: 4px;
-    gap: 4px;
-  }
-
-  .slider-contact-btn a {
-    font-size: 12px;
-    padding: 0 7px;
-  }
-
-  .slider-contact-btn .face {
-    width: 30px;
-    height: 30px;
-  }
 
   .contact-form-section {
     padding: 32px 12px;
