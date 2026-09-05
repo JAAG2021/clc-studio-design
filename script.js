@@ -221,13 +221,16 @@ function getLocalMouse(canvas) {
   const form = document.querySelector('.contact-form');
   if (!form) return;
 
-  const fields = Array.from(form.querySelectorAll('input, textarea'));
   const submitButton = form.querySelector('.contact-submit');
   const statusEl = document.getElementById('contact-status');
+  const nameField = form.querySelector('#contact-name');
+  const companyField = form.querySelector('#contact-company');
   const emailField = form.querySelector('#contact-email');
+  const messageField = form.querySelector('#contact-message');
   const phoneField = form.querySelector('#contact-phone');
   const phoneCountrySelect = form.querySelector('#contact-phone-country');
-  if (!submitButton || fields.length === 0) return;
+  const honeypot = form.querySelector('#contact-website');
+  if (!submitButton || !nameField || !emailField || !messageField) return;
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const hasPhoneLib = Boolean(window.libphonenumber && phoneCountrySelect);
@@ -249,25 +252,37 @@ function getLocalMouse(canvas) {
     phoneCountrySelect.value = countries.some((country) => country.code === 'SV') ? 'SV' : countries[0]?.code || '';
   }
 
-  const isFormComplete = () => fields.every((field) => field.value.trim().length > 0);
-  const isEmailValid = () => !emailField || EMAIL_RE.test(emailField.value.trim());
-  const isPhoneValid = () => {
-    if (!phoneField) return true;
-    if (!hasPhoneLib) return true;
-    return libphonenumber.isValidPhoneNumber(phoneField.value.trim(), phoneCountrySelect.value);
-  };
+  const value = (field) => (field ? field.value.trim() : '');
 
-  function formattedPhone() {
-    if (!phoneField) return '';
-    if (!hasPhoneLib) return phoneField.value.trim();
-    const parsed = libphonenumber.parsePhoneNumberFromString(phoneField.value.trim(), phoneCountrySelect.value);
-    return parsed ? parsed.formatInternational() : phoneField.value.trim();
+  /* Obligatorios: nombre, email y mensaje — el mismo contrato que valida el
+     servidor en functions/api/_validate.js. Empresa y teléfono son opcionales,
+     y el teléfono solo se valida cuando trae contenido. */
+  function firstProblem() {
+    if (value(nameField) === '') {
+      return { field: nameField, message: 'Escribe tu nombre y apellido.' };
+    }
+    if (value(emailField) === '') {
+      return { field: emailField, message: 'Escribe tu correo para poder responderte.' };
+    }
+    if (!EMAIL_RE.test(value(emailField))) {
+      return { field: emailField, message: 'Ese correo no parece válido. Revisa que incluya @ y un dominio.' };
+    }
+    if (value(messageField) === '') {
+      return { field: messageField, message: 'Cuéntanos brevemente en qué podemos ayudarte.' };
+    }
+    if (value(phoneField) !== '' && hasPhoneLib &&
+        !libphonenumber.isValidPhoneNumber(value(phoneField), phoneCountrySelect.value)) {
+      const country = phoneCountrySelect.selectedOptions[0]?.textContent || 'el país seleccionado';
+      return { field: phoneField, message: `Ese número no es válido para ${country}. También puedes dejarlo vacío.` };
+    }
+    return null;
   }
 
-  function updateSubmitState() {
-    const complete = isFormComplete() && isEmailValid() && isPhoneValid();
-    submitButton.disabled = !complete;
-    submitButton.setAttribute('aria-disabled', String(!complete));
+  function formattedPhone() {
+    const raw = value(phoneField);
+    if (raw === '' || !hasPhoneLib) return raw;
+    const parsed = libphonenumber.parsePhoneNumberFromString(raw, phoneCountrySelect.value);
+    return parsed ? parsed.formatInternational() : raw;
   }
 
   function setStatus(message, isError) {
@@ -276,48 +291,56 @@ function getLocalMouse(canvas) {
     statusEl.classList.toggle('contact-status--error', Boolean(isError));
   }
 
+  function clearFieldErrors() {
+    form.querySelectorAll('[aria-invalid="true"]').forEach((el) => el.removeAttribute('aria-invalid'));
+  }
+
+  function setSending(sending) {
+    submitButton.disabled = sending;
+    submitButton.setAttribute('aria-disabled', String(sending));
+    submitButton.textContent = sending ? 'Enviando...' : 'Enviar';
+  }
+
   let latestRequestId = 0;
 
-  fields.forEach((field) => {
-    field.addEventListener('input', updateSubmitState);
-    field.addEventListener('change', updateSubmitState);
+  /* El botón nunca queda deshabilitado en reposo: el usuario siempre puede
+     intentar enviar y recibir una explicación concreta de lo que falta. */
+  form.addEventListener('input', (event) => {
+    event.target.removeAttribute?.('aria-invalid');
   });
-
-  phoneCountrySelect?.addEventListener('change', updateSubmitState);
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
-    updateSubmitState();
 
-    if (!isFormComplete()) {
-      const firstEmptyField = fields.find((field) => field.value.trim().length === 0);
-      firstEmptyField?.focus();
+    /* Honeypot: un bot rellena todos los campos del formulario, incluido este,
+       que ninguna persona ve. Respondemos como si hubiera funcionado. */
+    if (honeypot && honeypot.value !== '') {
+      setStatus('¡Mensaje enviado! Te contactaremos pronto.', false);
+      form.reset();
       return;
     }
 
-    if (!isEmailValid()) {
-      setStatus('Formato de email inválido.', true);
-      emailField?.focus();
+    const problem = firstProblem();
+    if (problem) {
+      clearFieldErrors();
+      problem.field?.setAttribute('aria-invalid', 'true');
+      setStatus(problem.message, true);
+      problem.field?.focus();
       return;
     }
 
-    if (!isPhoneValid()) {
-      setStatus('Formato de teléfono inválido para el país seleccionado.', true);
-      phoneField?.focus();
-      return;
-    }
+    clearFieldErrors();
 
     const payload = {
-      nombre_apellido: form.querySelector('#contact-name').value.trim(),
-      empresa: form.querySelector('#contact-company').value.trim(),
+      nombre_apellido: value(nameField),
+      empresa: value(companyField),
       telefono: formattedPhone(),
-      email: form.querySelector('#contact-email').value.trim(),
-      mensaje: form.querySelector('#contact-message').value.trim()
+      email: value(emailField),
+      mensaje: value(messageField)
     };
 
     const requestId = ++latestRequestId;
-
-    submitButton.disabled = true;
+    setSending(true);
     setStatus('Enviando...', false);
 
     fetch('/api/contact', {
@@ -325,28 +348,38 @@ function getLocalMouse(canvas) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-      .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+      .then(async (response) => {
+        /* Una respuesta que no sea JSON (un 5xx en HTML, por ejemplo) no debe
+           romper el manejador: se trata como un fallo con mensaje genérico. */
+        let data = null;
+        try {
+          data = await response.json();
+        } catch (err) {
+          data = null;
+        }
+        return { ok: response.ok, data };
+      })
       .then(({ ok, data }) => {
         if (requestId !== latestRequestId) return;
-        if (!ok || !data.ok) {
-          throw new Error(data?.error || 'No se pudo enviar el mensaje.');
+        if (!ok || !data || !data.ok) {
+          throw new Error((data && data.error) || 'No se pudo enviar el mensaje.');
         }
         setStatus('¡Mensaje enviado! Te contactaremos pronto.', false);
         form.reset();
       })
       .catch((error) => {
         if (requestId !== latestRequestId) return;
-        setStatus(error.message, true);
+        setStatus(`${error.message} También puedes escribirnos por WhatsApp al +503 7159 6976.`, true);
       })
       .finally(() => {
         if (requestId !== latestRequestId) return;
-        updateSubmitState();
+        setSending(false);
       });
   });
 
-  window.addEventListener('pageshow', updateSubmitState);
-  setTimeout(updateSubmitState, 100);
-  updateSubmitState();
+  /* Al volver con el botón "atrás" el navegador restaura la página desde caché:
+     si quedó a media petición, el botón debe volver a estar utilizable. */
+  window.addEventListener('pageshow', () => setSending(false));
 })();
 
 /* Project detail content */

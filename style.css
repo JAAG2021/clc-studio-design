@@ -907,6 +907,42 @@ div .label {
   color: #c0392b;
 }
 
+/* Marca visible del campo que el usuario debe corregir. El mensaje concreto
+   lo escribe script.js en #contact-status, que es aria-live. */
+.contact-field input[aria-invalid="true"],
+.contact-field textarea[aria-invalid="true"],
+.contact-phone-group input[aria-invalid="true"] {
+  border-color: #c0392b;
+  box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.14);
+}
+
+.contact-optional {
+  font-weight: 400;
+  opacity: 0.62;
+}
+
+/* Trampa anti-spam: fuera de la pantalla, no oculta con display:none, que
+   muchos bots detectan y saltan. */
+.contact-honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.contact-submit {
+  cursor: pointer;
+}
+
+.contact-submit:focus-visible,
+.contact-field input:focus-visible,
+.contact-field textarea:focus-visible,
+.contact-phone-group select:focus-visible {
+  outline: 2px solid #4d5ac4;
+  outline-offset: 2px;
+}
+
 /* --- Service Section --- */
 .service-section {
   position: relative;

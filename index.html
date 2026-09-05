@@ -355,41 +355,48 @@
       <img class="contact-form-tag" src="recursos/Formulario/Etiqueta.png" alt="" />
     </div>
 
-    <form class="contact-form" id="contact-form">
+    <form class="contact-form" id="contact-form" novalidate>
       <div class="contact-field">
         <label for="contact-name">Nombre y Apellido</label>
         <input id="contact-name" name="nombre_apellido" type="text" placeholder="Escribe tu nombre y apellido"
-          autocomplete="name" />
+          autocomplete="name" required />
       </div>
 
       <div class="contact-field">
-        <label for="contact-company">Empresa</label>
+        <label for="contact-company">Empresa <span class="contact-optional">(opcional)</span></label>
         <input id="contact-company" name="empresa" type="text" placeholder="Escribe el nombre de tu empresa"
           autocomplete="organization" />
       </div>
 
       <div class="contact-field">
-        <label for="contact-phone">Teléfono</label>
+        <label for="contact-phone">Teléfono <span class="contact-optional">(opcional)</span></label>
         <div class="contact-phone-group">
           <select id="contact-phone-country" name="telefono_pais" autocomplete="tel-country-code"
             aria-label="País para el teléfono"></select>
-          <input id="contact-phone" name="telefono" type="tel" placeholder="(012) 345-678" autocomplete="tel-national"
+          <input id="contact-phone" name="telefono" type="tel" placeholder="Tu número de teléfono" autocomplete="tel-national"
             inputmode="tel" />
         </div>
       </div>
 
       <div class="contact-field">
         <label for="contact-email">E-mail</label>
-        <input id="contact-email" name="email" type="email" placeholder="Escribe tu correo" autocomplete="email" />
+        <input id="contact-email" name="email" type="email" placeholder="Escribe tu correo" autocomplete="email" required />
       </div>
 
       <div class="contact-field">
         <label for="contact-message">Mensaje</label>
         <textarea id="contact-message" name="mensaje" rows="5"
-          placeholder="Explícanos tu motivo de consulta para el equipo de CleanLineColor Studio"></textarea>
+          placeholder="Explícanos tu motivo de consulta para el equipo de CleanLineColor Studio" required></textarea>
       </div>
 
-      <button class="contact-submit" type="submit" disabled aria-disabled="true">Enviar</button>
+      <!-- Trampa anti-spam: fuera de pantalla y fuera del orden de tabulación.
+           Ninguna persona lo ve; los bots lo rellenan y el envío se descarta. -->
+      <div class="contact-honeypot" aria-hidden="true">
+        <label for="contact-website">No completes este campo</label>
+        <input id="contact-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+      </div>
+
+      <button class="contact-submit" type="submit">Enviar</button>
       <p id="contact-status" class="contact-status" role="status" aria-live="polite"></p>
     </form>
   </section>

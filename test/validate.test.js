@@ -48,3 +48,27 @@ test('payload nulo se rechaza sin lanzar', () => {
   const result = validateContactPayload(null);
   assert.equal(result.valid, false);
 });
+
+/* Regresión del bug de producción: el cliente exigía empresa y teléfono para
+   habilitar el botón, mientras el servidor siempre los consideró opcionales.
+   Este test fija el contrato para que ambos lados no vuelvan a divergir. */
+test('empresa y teléfono son opcionales', () => {
+  const result = validateContactPayload({
+    nombre_apellido: 'Ana Pérez',
+    email: 'ana@example.com',
+    mensaje: 'Hola, quiero cotizar un proyecto.'
+  });
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.errors, {});
+});
+
+test('empresa y teléfono vacíos tampoco invalidan', () => {
+  const result = validateContactPayload({
+    nombre_apellido: 'Ana Pérez',
+    empresa: '',
+    telefono: '',
+    email: 'ana@example.com',
+    mensaje: 'Hola'
+  });
+  assert.equal(result.valid, true);
+});
