@@ -118,8 +118,15 @@ async function handleContact({ request, env }) {
     return jsonResponse({ ok: false, error: 'No se pudo enviar el mensaje. Inténtalo de nuevo.' }, 502);
   }
 
+  /* El id que devuelve Resend queda en los logs de Pages. Es lo que permite
+     responder "se envió el 5 de septiembre, id 6dba7b68..." cuando alguien
+     pregunta por un contacto concreto, en vez de encogerse de hombros. */
+  const aceptado = await respuesta.json().catch(() => null);
+  const idResend = aceptado && aceptado.id ? aceptado.id : 'desconocido';
+  console.log(`[contacto] entregado a Resend para ${env.CONTACT_TO_EMAIL} id=${idResend}`);
+
   if (env.CONTACTOS) {
-    await env.CONTACTOS.put(registroClave, JSON.stringify({ ...registro, entregado: true }));
+    await env.CONTACTOS.put(registroClave, JSON.stringify({ ...registro, entregado: true, idResend }));
   }
 
   return jsonResponse({ ok: true }, 200);
