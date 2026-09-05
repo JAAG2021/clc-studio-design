@@ -12,9 +12,13 @@ CONTACT_FROM_EMAIL=CleanLineColor Studio <formulario@mail.clcolor.com>
 # pruebas de Resend, y por eso los formularios no llegaban a CLC.
 CONTACT_TO_EMAIL=contacto@clcolor.com
 
-# Opcional. Si se define, /api/contact exige y verifica un token de
-# Cloudflare Turnstile. Sin ella el endpoint sigue protegido por el campo
-# trampa y el limite por IP.
+# Opcional para desarrollo local. En produccion SI esta configurada: el
+# widget de Turnstile en index.html usa el sitekey publico de CLC
+# (0x4AAAAAAEphAHkLhJU95ppR), y /api/contact exige el token en cuanto esta
+# variable existe. En local, sin ella, el formulario sigue funcionando
+# igual -- protegido solo por el campo trampa y el limite por IP -- porque
+# el widget real no resuelve en localhost salvo que uses las claves de
+# prueba de Cloudflare (ver docs/superpowers/reports/2026-09-05-turnstile.md).
 # TURNSTILE_SECRET_KEY=0x4xxxxxxxxxxxxxxxxxxxxxxxx
 
 # Binding de KV (se crea en el panel de Pages, no aqui): un namespace llamado
