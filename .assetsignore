@@ -1,0 +1,23 @@
+# Archivos que viven en el repositorio pero no deben publicarse en el dominio.
+# Sintaxis igual que .gitignore.
+#
+# Antes de esto quedaban accesibles en produccion, entre otros,
+# /docs/superpowers/plans/2026-07-19-cloudflare-deployment.md (39 KB con todo
+# el plan de infraestructura), /pnpm-lock.yaml y /.dev.vars.example.
+
+docs/
+test/
+node_modules/
+.wrangler/
+
+package.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+
+.gitignore
+.assetsignore
+.dev.vars
+.dev.vars.example
+
+*.md
+*.py

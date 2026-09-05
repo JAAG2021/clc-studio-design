@@ -419,7 +419,10 @@ function getLocalMouse(canvas) {
       empresa: value(companyField),
       telefono: formattedPhone(),
       email: value(emailField),
-      mensaje: value(messageField)
+      mensaje: value(messageField),
+      /* El servidor vuelve a comprobar la trampa: un bot que publique
+         directamente contra /api/contact se salta la comprobación de arriba. */
+      website: honeypot ? honeypot.value : ''
     };
 
     const requestId = ++latestRequestId;
@@ -477,64 +480,66 @@ function getLocalMouse(canvas) {
     'oceanside-el-salvador': {
       client: 'Oceanside El Salvador',
       type: 'Diseño Web & Redes Sociales',
-      image: 'recursos/Proyectos/proyecto_01.webp'
+      image: '/recursos/Proyectos/proyecto_01.webp'
     },
     'carmen-galindo-atelier': {
       client: 'Carmen Galindo Atelier',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_02.webp'
+      image: '/recursos/Proyectos/proyecto_02.webp'
     },
     'surf-city': {
       client: 'Surf City',
       type: 'Redes Sociales',
-      image: 'recursos/Proyectos/proyecto_03.webp'
+      image: '/recursos/Proyectos/proyecto_03.webp'
     },
     'grupo-proint': {
       client: 'Grupo Proint',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_04.webp'
+      image: '/recursos/Proyectos/proyecto_04.webp'
     },
     'del-horno': {
       client: 'Del Horno',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_05.webp'
+      image: '/recursos/Proyectos/proyecto_05.webp'
     },
     'bibimbap': {
       client: 'Bibimbap',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_06.webp',
+      image: '/recursos/Proyectos/proyecto_06.webp',
       gallery: [
-        'recursos/Proyectos/Bibimbap/01.webp',
-        'recursos/Proyectos/Bibimbap/02.webp',
-        'recursos/Proyectos/Bibimbap/03.webp',
-        'recursos/Proyectos/Bibimbap/04.webp',
-        'recursos/Proyectos/Bibimbap/05.webp',
-        'recursos/Proyectos/Bibimbap/06.webp',
-        'recursos/Proyectos/Bibimbap/07.webp',
-        'recursos/Proyectos/Bibimbap/08.webp',
-        'recursos/Proyectos/Bibimbap/09.webp',
-        'recursos/Proyectos/Bibimbap/10.webp'
+        '/recursos/Proyectos/Bibimbap/01.webp',
+        '/recursos/Proyectos/Bibimbap/02.webp',
+        '/recursos/Proyectos/Bibimbap/03.webp',
+        '/recursos/Proyectos/Bibimbap/04.webp',
+        '/recursos/Proyectos/Bibimbap/05.webp',
+        '/recursos/Proyectos/Bibimbap/06.webp',
+        '/recursos/Proyectos/Bibimbap/07.webp',
+        '/recursos/Proyectos/Bibimbap/08.webp',
+        '/recursos/Proyectos/Bibimbap/09.webp',
+        '/recursos/Proyectos/Bibimbap/10.webp'
       ]
     },
     'calambre': {
       client: 'Calambre',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_07.webp'
+      image: '/recursos/Proyectos/proyecto_07.webp'
     },
     'daruma-iced-tea': {
       client: 'Daruma Iced Tea',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_08.webp'
+      image: '/recursos/Proyectos/proyecto_08.webp'
     },
     'sapphire-martini': {
       client: 'Sapphire Martini',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_09.webp'
+      image: '/recursos/Proyectos/proyecto_09.webp'
     }
   };
 
-  const slug = new URLSearchParams(window.location.search).get('proyecto') || 'oceanside-el-salvador';
-  const project = projects[slug] || projects['oceanside-el-salvador'];
+  const requestedSlug = new URLSearchParams(window.location.search).get('proyecto');
+  const knownSlug = requestedSlug && projects[requestedSlug] ? requestedSlug : null;
+  const slug = knownSlug || 'oceanside-el-salvador';
+  const project = projects[slug];
 
   titleEl.textContent = project.client;
   typeEl.textContent = project.type;
@@ -553,7 +558,40 @@ function getLocalMouse(canvas) {
     imageEl.alt = `${project.client} - ${project.type}`;
   }
 
+  /* Las nueve fichas de proyecto viven en esta misma página con distinto
+     ?proyecto=. Sin actualizar los metadatos, las nueve URLs del sitemap
+     compartían título, descripción y canonical: Google las veía como
+     contenido duplicado. */
+  const SITE = 'https://clcolor.com';
+  const canonical = `${SITE}/proyecto?proyecto=${encodeURIComponent(slug)}`;
+  const description =
+    `${project.client}: proyecto de ${project.type.toLowerCase()} realizado por CleanLineColor Studio.`;
+  const image = `${SITE}${project.gallery ? project.gallery[0] : project.image}`;
+
+  function setMeta(selector, attribute, content) {
+    const el = document.head.querySelector(selector);
+    if (el) el.setAttribute(attribute, content);
+  }
+
   document.title = `${project.client} | CleanLineColor Studio`;
+  setMeta('meta[name="description"]', 'content', description);
+  setMeta('link[rel="canonical"]', 'href', canonical);
+  setMeta('meta[property="og:url"]', 'content', canonical);
+  setMeta('meta[property="og:title"]', 'content', document.title);
+  setMeta('meta[property="og:description"]', 'content', description);
+  setMeta('meta[property="og:image"]', 'content', image);
+  setMeta('meta[name="twitter:title"]', 'content', document.title);
+  setMeta('meta[name="twitter:description"]', 'content', description);
+  setMeta('meta[name="twitter:image"]', 'content', image);
+
+  /* Un ?proyecto= que no existe muestra el proyecto por defecto, pero esa URL
+     no debe indexarse: sería otra copia del mismo contenido. */
+  if (requestedSlug && !knownSlug) {
+    const robots = document.createElement('meta');
+    robots.name = 'robots';
+    robots.content = 'noindex, follow';
+    document.head.appendChild(robots);
+  }
 })();
 
 /* ─── CANVAS 2: Organic Blob (About) ────────── */

@@ -1,3 +1,13 @@
+# Obligatorias
 RESEND_API_KEY=re_xxxxxxxxxxxx
-CONTACT_FROM_EMAIL=onboarding@resend.dev
+CONTACT_FROM_EMAIL=contacto@mail.clcolor.com
 CONTACT_TO_EMAIL=cleanlinecolorstudio@gmail.com
+
+# Opcional. Si se define, /api/contact exige y verifica un token de
+# Cloudflare Turnstile. Sin ella, el endpoint sigue funcionando solo con el
+# campo trampa y el limite por IP.
+# TURNSTILE_SECRET_KEY=0x4xxxxxxxxxxxxxxxxxxxxxxxx
+
+# Binding de KV (se crea en el panel de Pages, no aqui): un namespace llamado
+# CONTACTOS. Si existe, cada envio se guarda antes de llamar a Resend y se
+# aplica un limite de 5 envios por IP cada 10 minutos.

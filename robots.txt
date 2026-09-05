@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
 
+# La 404 y las variantes con parametro desconocido ya se marcan noindex
+# desde la propia pagina; aqui no hace falta bloquear nada mas.
+
 Sitemap: https://clcolor.com/sitemap.xml
