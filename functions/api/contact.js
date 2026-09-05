@@ -78,12 +78,21 @@ async function handleContact({ request, env }) {
     await env.CONTACTOS.put(registroClave, JSON.stringify(registro));
   }
 
+  /* El correo lo leen los dueños de CLC, que operan desde Colombia: la marca
+     de tiempo va en su huso, no en UTC. El ISO se conserva en el registro de
+     KV, que es el que leen las maquinas. */
+  const recibidoLocal = new Intl.DateTimeFormat('es-CO', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+    timeZone: 'America/Bogota'
+  }).format(new Date(recibidoEn));
+
   const cuerpo = [
     `Nombre y apellido: ${nombre_apellido}`,
     `Empresa: ${empresa || '(no especificada)'}`,
     `Teléfono: ${telefono || '(no especificado)'}`,
     `Email: ${email}`,
-    `Recibido: ${recibidoEn}`,
+    `Recibido: ${recibidoLocal} (hora de Colombia)`,
     '',
     mensaje
   ].join('\n');
