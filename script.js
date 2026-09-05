@@ -140,6 +140,54 @@ const revealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
 document.querySelectorAll('[data-reveal]').forEach(el => revealObserver.observe(el));
 
+/* ─── Carga diferida de vídeo ──────────── */
+/* Los <video> llevan data-src en vez de src, y un poster WebP de unos pocos
+   KB. Así la página no descarga casi un mega de vídeo antes de que el
+   visitante llegue siquiera a esa sección. Se enganchan cuando faltan 300 px
+   para entrar en pantalla. */
+(function initLazyVideos() {
+  const videos = Array.from(document.querySelectorAll('video')).filter(
+    (video) => video.dataset.src || video.querySelector('source[data-src]')
+  );
+  if (videos.length === 0) return;
+
+  function attach(video) {
+    const source = video.querySelector('source[data-src]');
+    if (source) {
+      source.src = source.dataset.src;
+      source.removeAttribute('data-src');
+    } else if (video.dataset.src) {
+      video.src = video.dataset.src;
+      video.removeAttribute('data-src');
+    } else {
+      return;
+    }
+    video.load();
+    const started = video.play();
+    if (started) {
+      started.catch(() => {
+        /* Si el navegador bloquea la reproducción automática se queda el
+           póster visible, que es justo el comportamiento deseado. */
+      });
+    }
+  }
+
+  if (!('IntersectionObserver' in window)) {
+    videos.forEach(attach);
+    return;
+  }
+
+  const videoObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      videoObserver.unobserve(entry.target);
+      attach(entry.target);
+    });
+  }, { rootMargin: '300px' });
+
+  videos.forEach((video) => videoObserver.observe(video));
+})();
+
 /* ─── 7. Parallax on About Video ─────────────── */
 const thinkingVideo   = document.querySelector('.thinking-video');
 const thinkingSection = document.querySelector('.thinking-section');
@@ -429,59 +477,59 @@ function getLocalMouse(canvas) {
     'oceanside-el-salvador': {
       client: 'Oceanside El Salvador',
       type: 'Diseño Web & Redes Sociales',
-      image: 'recursos/Proyectos/proyecto_01.png'
+      image: 'recursos/Proyectos/proyecto_01.webp'
     },
     'carmen-galindo-atelier': {
       client: 'Carmen Galindo Atelier',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_02.png'
+      image: 'recursos/Proyectos/proyecto_02.webp'
     },
     'surf-city': {
       client: 'Surf City',
       type: 'Redes Sociales',
-      image: 'recursos/Proyectos/proyecto_03.png'
+      image: 'recursos/Proyectos/proyecto_03.webp'
     },
     'grupo-proint': {
       client: 'Grupo Proint',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_04.png'
+      image: 'recursos/Proyectos/proyecto_04.webp'
     },
     'del-horno': {
       client: 'Del Horno',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_05.png'
+      image: 'recursos/Proyectos/proyecto_05.webp'
     },
     'bibimbap': {
       client: 'Bibimbap',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_06.png',
+      image: 'recursos/Proyectos/proyecto_06.webp',
       gallery: [
-        'recursos/Proyectos/Bibimbap/01.jpg',
-        'recursos/Proyectos/Bibimbap/02.jpg',
-        'recursos/Proyectos/Bibimbap/03.jpg',
-        'recursos/Proyectos/Bibimbap/04.jpg',
-        'recursos/Proyectos/Bibimbap/05.jpg',
-        'recursos/Proyectos/Bibimbap/06.jpg',
-        'recursos/Proyectos/Bibimbap/07.jpg',
-        'recursos/Proyectos/Bibimbap/08.jpg',
-        'recursos/Proyectos/Bibimbap/09.jpg',
-        'recursos/Proyectos/Bibimbap/10.jpg'
+        'recursos/Proyectos/Bibimbap/01.webp',
+        'recursos/Proyectos/Bibimbap/02.webp',
+        'recursos/Proyectos/Bibimbap/03.webp',
+        'recursos/Proyectos/Bibimbap/04.webp',
+        'recursos/Proyectos/Bibimbap/05.webp',
+        'recursos/Proyectos/Bibimbap/06.webp',
+        'recursos/Proyectos/Bibimbap/07.webp',
+        'recursos/Proyectos/Bibimbap/08.webp',
+        'recursos/Proyectos/Bibimbap/09.webp',
+        'recursos/Proyectos/Bibimbap/10.webp'
       ]
     },
     'calambre': {
       client: 'Calambre',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_07.png'
+      image: 'recursos/Proyectos/proyecto_07.webp'
     },
     'daruma-iced-tea': {
       client: 'Daruma Iced Tea',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_08.png'
+      image: 'recursos/Proyectos/proyecto_08.webp'
     },
     'sapphire-martini': {
       client: 'Sapphire Martini',
       type: 'Branding',
-      image: 'recursos/Proyectos/proyecto_09.png'
+      image: 'recursos/Proyectos/proyecto_09.webp'
     }
   };
 
