@@ -76,6 +76,21 @@
     ]
   }
   </script>
+  <noscript>
+    <style>
+      /* Sin JavaScript nadie retira la pantalla de carga ni añade las clases
+         que revelan las secciones: el home quedaba tapado por el loader y con
+         todo el contenido en opacity 0, tanto para el visitante como para
+         cualquier rastreador que no ejecute scripts. */
+      .loading { display: none !important; }
+      .custom-cursor { display: none !important; }
+      [data-reveal],
+      .hero-reveal {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    </style>
+  </noscript>
 </head>
 
 <body id="my-scrollbar">
