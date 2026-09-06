@@ -2065,7 +2065,7 @@ div .label {
   }
 
   .hero-text-content h1 {
-    font-size: calc(clamp(34px, 10vw, 74px) - 6pt);
+    font-size: calc(clamp(26px, 7.6vw + 9.7px, 68px) - 6pt);
     line-height: 1.05;
     letter-spacing: -3px;
   }
@@ -2184,7 +2184,6 @@ div .label {
   }
 
   .hero-text-content h1 {
-    font-size: calc(clamp(28px, 11.5vw, 62px) - 6pt);
     line-height: 1.08;
     letter-spacing: -2px;
   }
@@ -2312,7 +2311,6 @@ div .label {
   }
 
   .hero-text-content h1 {
-    font-size: calc(clamp(22px, 9.6vw, 46px) - 6pt);
     line-height: 1.1;
     letter-spacing: -1px;
   }
@@ -2386,7 +2384,6 @@ div .label {
   }
 
   .hero-text-content h1 {
-    font-size: calc(clamp(18px, 10.3vw, 37px) - 6pt);
     line-height: 1.12;
     letter-spacing: 0px;
   }
