@@ -2191,6 +2191,7 @@ div .label {
 
   .hero-line-2 .rotating-word {
     margin-left: 10px;
+    font-size: 1em;
   }
 
   .wrapper {
@@ -2311,13 +2312,14 @@ div .label {
   }
 
   .hero-text-content h1 {
-    font-size: calc(clamp(24px, 11vw, 52px) - 6pt);
+    font-size: calc(clamp(22px, 9.6vw, 46px) - 6pt);
     line-height: 1.1;
     letter-spacing: -1px;
   }
 
   .hero-line-2 .rotating-word {
     margin-left: 8px;
+    font-size: 1em;
   }
 
   .wrapper {
@@ -2384,13 +2386,14 @@ div .label {
   }
 
   .hero-text-content h1 {
-    font-size: calc(clamp(20px, 11.7vw, 42px) - 6pt);
+    font-size: calc(clamp(18px, 10.3vw, 37px) - 6pt);
     line-height: 1.12;
     letter-spacing: 0px;
   }
 
   .hero-line-2 .rotating-word {
     margin-left: 6px;
+    font-size: 1em;
   }
 
   .wrapper {
