@@ -1616,6 +1616,19 @@ div .label {
     pointer-events: auto;
   }
 
+  /* El "Ver más" de cada tarjeta del hero solo aparecía con :hover, que
+     nunca se dispara en pantallas táctiles: el enlace quedaba invisible
+     pero tocable, un rastro fantasma sin pista visual. */
+  .slider .card a {
+    opacity: 1;
+    bottom: 16px;
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 13px;
+    padding: 6px 14px;
+  }
+
   /* Prevent sticky :hover scaling from overflowing service cards on touch */
   .service-wrapper:hover {
     transform: none;
@@ -1886,6 +1899,58 @@ div .label {
     padding: 40px 0;
   }
 
+  /* Slider del hero: tarjetas de 400x300 fijas, nunca se habian ajustado
+     en ningun breakpoint (a diferencia de .images .img, su equivalente en
+     la galeria de video, que si se reduce en cada uno). En movil una sola
+     tarjeta llenaba casi toda la pantalla y el boton "Hablemos" -- tambien
+     de tamano fijo -- quedaba encima, tapando la imagen. */
+  .slider .card {
+    width: 260px;
+    height: 195px;
+    border-radius: 32px;
+    margin-right: 16px;
+  }
+
+  .slider .card img {
+    border-radius: 16px;
+  }
+
+  /* El boton "Hablemos" estaba centrado en absoluto sobre el carrusel
+     (pensado para escritorio, con 3 tarjetas grandes y huecos amplios
+     entre ellas). Reducir su tamano no alcanzaba: en cualquier ancho de
+     movil, con menos "hueco" disponible, siempre terminaba encima de
+     alguna tarjeta. Se saca del carrusel y pasa a vivir debajo, como
+     elemento propio en el flujo normal -- ya no compite visualmente
+     con las imagenes que se deslizan. */
+  .wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .inner-slider {
+    align-self: stretch;
+  }
+
+  .slider-contact-btn {
+    position: static;
+    transform: none;
+    animation: none;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .slider-contact-btn a {
+    font-size: 26px;
+    padding: 0 18px;
+  }
+
+  .slider-contact-btn .face {
+    width: 56px;
+    height: 56px;
+  }
+
   .contact-form-section {
     grid-template-columns: minmax(0, 1fr);
     justify-items: center;
@@ -2006,7 +2071,7 @@ div .label {
   }
 
   .hero-text-content h1 {
-    font-size: calc(clamp(34px, 12vw, 74px) - 6pt);
+    font-size: calc(clamp(26px, 7.6vw + 9.7px, 68px) - 6pt);
     line-height: 1.05;
     letter-spacing: -3px;
   }
@@ -2018,6 +2083,23 @@ div .label {
   .wrapper {
     padding: 30px 0;
   }
+
+  /* Slider del hero: tarjetas de 400x300 fijas, nunca se habian ajustado
+     en ningun breakpoint (a diferencia de .images .img, su equivalente en
+     la galeria de video, que si se reduce en cada uno). En movil una sola
+     tarjeta llenaba casi toda la pantalla y el boton "Hablemos" -- tambien
+     de tamano fijo -- quedaba encima, tapando la imagen. */
+  .slider .card {
+    width: 200px;
+    height: 150px;
+    border-radius: 26px;
+    margin-right: 14px;
+  }
+
+  .slider .card img {
+    border-radius: 13px;
+  }
+
 
   .contact-form-section {
     padding: 48px 24px;
@@ -2108,18 +2190,35 @@ div .label {
   }
 
   .hero-text-content h1 {
-    font-size: calc(clamp(28px, 14vw, 62px) - 6pt);
     line-height: 1.08;
     letter-spacing: -2px;
   }
 
   .hero-line-2 .rotating-word {
     margin-left: 10px;
+    font-size: 1em;
   }
 
   .wrapper {
     padding: 24px 0;
   }
+
+  /* Slider del hero: tarjetas de 400x300 fijas, nunca se habian ajustado
+     en ningun breakpoint (a diferencia de .images .img, su equivalente en
+     la galeria de video, que si se reduce en cada uno). En movil una sola
+     tarjeta llenaba casi toda la pantalla y el boton "Hablemos" -- tambien
+     de tamano fijo -- quedaba encima, tapando la imagen. */
+  .slider .card {
+    width: 160px;
+    height: 120px;
+    border-radius: 22px;
+    margin-right: 12px;
+  }
+
+  .slider .card img {
+    border-radius: 11px;
+  }
+
 
   .contact-form-section {
     border-radius: 28px;
@@ -2218,18 +2317,35 @@ div .label {
   }
 
   .hero-text-content h1 {
-    font-size: calc(clamp(24px, 15vw, 52px) - 6pt);
     line-height: 1.1;
     letter-spacing: -1px;
   }
 
   .hero-line-2 .rotating-word {
     margin-left: 8px;
+    font-size: 1em;
   }
 
   .wrapper {
     padding: 20px 0;
   }
+
+  /* Slider del hero: tarjetas de 400x300 fijas, nunca se habian ajustado
+     en ningun breakpoint (a diferencia de .images .img, su equivalente en
+     la galeria de video, que si se reduce en cada uno). En movil una sola
+     tarjeta llenaba casi toda la pantalla y el boton "Hablemos" -- tambien
+     de tamano fijo -- quedaba encima, tapando la imagen. */
+  .slider .card {
+    width: 130px;
+    height: 98px;
+    border-radius: 18px;
+    margin-right: 10px;
+  }
+
+  .slider .card img {
+    border-radius: 9px;
+  }
+
 
   .contact-form-copy p {
     font-size: 24px;
@@ -2274,18 +2390,35 @@ div .label {
   }
 
   .hero-text-content h1 {
-    font-size: calc(clamp(20px, 16vw, 42px) - 6pt);
     line-height: 1.12;
     letter-spacing: 0px;
   }
 
   .hero-line-2 .rotating-word {
     margin-left: 6px;
+    font-size: 1em;
   }
 
   .wrapper {
     padding: 18px 0;
   }
+
+  /* Slider del hero: tarjetas de 400x300 fijas, nunca se habian ajustado
+     en ningun breakpoint (a diferencia de .images .img, su equivalente en
+     la galeria de video, que si se reduce en cada uno). En movil una sola
+     tarjeta llenaba casi toda la pantalla y el boton "Hablemos" -- tambien
+     de tamano fijo -- quedaba encima, tapando la imagen. */
+  .slider .card {
+    width: 108px;
+    height: 81px;
+    border-radius: 16px;
+    margin-right: 8px;
+  }
+
+  .slider .card img {
+    border-radius: 8px;
+  }
+
 
   .contact-form-section {
     padding: 32px 12px;
