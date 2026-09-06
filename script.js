@@ -313,6 +313,7 @@ function getLocalMouse(canvas) {
   const phoneField = form.querySelector('#contact-phone');
   const phoneCountrySelect = form.querySelector('#contact-phone-country');
   const honeypot = form.querySelector('#contact-website');
+  const turnstileContainer = form.querySelector('#turnstile-widget');
   if (!submitButton || !nameField || !emailField || !messageField) return;
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -336,6 +337,26 @@ function getLocalMouse(canvas) {
   }
 
   const value = (field) => (field ? field.value.trim() : '');
+
+  /* Turnstile: el widget se renderiza en modo explicit (ver el <script> con
+     render=explicit en index.html) para controlar exactamente cuándo se pide
+     un token nuevo. El sitio web nunca ve la clave secreta -- esa vive solo
+     en la Function, como variable de entorno. Si el contenedor no existe en
+     la página, o el sitekey no está configurado, el formulario sigue
+     funcionando: el servidor solo exige el token cuando tiene
+     TURNSTILE_SECRET_KEY configurada. */
+  let turnstileToken = '';
+  let turnstileWidgetId = null;
+
+  window.onTurnstileLoad = function onTurnstileLoad() {
+    if (!turnstileContainer || !window.turnstile) return;
+    turnstileWidgetId = turnstile.render(turnstileContainer, {
+      sitekey: '0x4AAAAAAEphAHkLhJU95ppR',
+      callback: (token) => { turnstileToken = token; },
+      'error-callback': () => { turnstileToken = ''; },
+      'expired-callback': () => { turnstileToken = ''; }
+    });
+  };
 
   /* Obligatorios: nombre, email y mensaje — el mismo contrato que valida el
      servidor en functions/api/_validate.js. Empresa y teléfono son opcionales,
@@ -422,7 +443,8 @@ function getLocalMouse(canvas) {
       mensaje: value(messageField),
       /* El servidor vuelve a comprobar la trampa: un bot que publique
          directamente contra /api/contact se salta la comprobación de arriba. */
-      website: honeypot ? honeypot.value : ''
+      website: honeypot ? honeypot.value : '',
+      turnstile_token: turnstileToken
     };
 
     const requestId = ++latestRequestId;
@@ -458,6 +480,13 @@ function getLocalMouse(canvas) {
         setStatus(`${error.message} También puedes escribirnos por WhatsApp al +503 7159 6976.`, true);
       })
       .finally(() => {
+        /* El token de Turnstile es de un solo uso: se reinicia el widget
+           tanto si el envío tuvo éxito como si falló, para que el siguiente
+           intento pida uno nuevo en vez de reenviar el ya usado. */
+        if (turnstileWidgetId !== null && window.turnstile) {
+          turnstile.reset(turnstileWidgetId);
+        }
+        turnstileToken = '';
         if (requestId !== latestRequestId) return;
         setSending(false);
       });

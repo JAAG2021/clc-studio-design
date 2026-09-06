@@ -940,6 +940,12 @@ div .label {
   overflow: hidden;
 }
 
+.contact-turnstile {
+  margin-bottom: 16px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .contact-submit {
   cursor: pointer;
 }
